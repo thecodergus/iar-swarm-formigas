@@ -21,7 +21,7 @@ use std::time::Duration;
       }
    }
 
-   pub fn novo_movimento(&mut self, tamanho_mapa: (i32, i32)){
+   pub fn novo_movimento(&mut self, tamanho_mapa: (f64, f64)){
       let mut rng = rand::thread_rng();
       let numero_aleatorio = rng.gen_range(1..=4);
 
@@ -31,30 +31,30 @@ use std::time::Duration;
       // 4 - Esquerda
       match numero_aleatorio{
          1 => {
-            if self.posicao.lock().unwrap().y + 1 < tamanho_mapa.1{
-               self.posicao.lock().unwrap().y += 1;
+            if self.posicao.lock().unwrap().y + 1.0 < tamanho_mapa.1{
+               self.posicao.lock().unwrap().y += 1.0;
             }
          },
          2 => {
-            if self.posicao.lock().unwrap().x + 1 < tamanho_mapa.0{
-               self.posicao.lock().unwrap().x += 1;
+            if self.posicao.lock().unwrap().x + 1.0 < tamanho_mapa.0{
+               self.posicao.lock().unwrap().x += 1.0;
             }
          },
          3 => {
-            if self.posicao.lock().unwrap().y - 1 > 0 {
-               self.posicao.lock().unwrap().y -= 1;
+            if self.posicao.lock().unwrap().y - 1.0 > 0.0 {
+               self.posicao.lock().unwrap().y -= 1.0;
             }
          },
          4 => {
-            if self.posicao.lock().unwrap().x - 1 > 0{
-               self.posicao.lock().unwrap().x -= 1;
+            if self.posicao.lock().unwrap().x - 1.0 > 0.0 {
+               self.posicao.lock().unwrap().x -= 1.0;
             }
          },
          _ => ()
       }
    }
 
-    pub fn start(mut self, tamanho_mapa: (i32, i32)) {
+    pub fn start(mut self, tamanho_mapa: (f64, f64)) {
         let posicao = Arc::clone(&self.posicao);
 
         thread::spawn(move || {

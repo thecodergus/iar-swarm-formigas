@@ -1,4 +1,4 @@
 pub struct Ponto{
-    pub x: i32,
-    pub y: i32
+    pub x: f64,
+    pub y: f64
 }
