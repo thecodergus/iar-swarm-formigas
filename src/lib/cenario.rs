@@ -1,5 +1,6 @@
 use super::formiga::Formiga;
 use super::grao::Grao;
+use super::outros::Ponto;
 use std::sync::{Arc, Mutex};
 
 use glutin_window::GlutinWindow as Window;
@@ -44,6 +45,16 @@ impl Cenario {
     }
 
     fn update(&self, args: &UpdateArgs) {}
+
+    // Adicionar formiga representado por um ponto da cor vermelha
+    fn adicionar_formiga(&mut self, posicao: Ponto) {
+        self.formigas.push(Formiga::new(posicao));
+    }
+
+    // Adicionar grão representado por um ponto da cor verde
+    fn adicionar_grao(&mut self, posicao: Ponto) {
+        self.graos.push(Arc::new(Mutex::new(Grao::new(posicao))));
+    }
 
     pub fn start(&mut self) {
         // Versão do OpenGL
