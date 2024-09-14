@@ -1,4 +1,4 @@
-use super::formiga::Formiga;
+use super::formiga::{self, Formiga};
 use super::grao::Grao;
 use super::outros::Ponto;
 use std::sync::{Arc, Mutex};
@@ -43,6 +43,26 @@ impl Cenario {
                 clear(PRETO, gl);
 
                 // Desenhando Grãos
+                for grao in self.graos.lock().unwrap().iter() {
+                    let posicao = &grao.posicao;
+                    ellipse(
+                        VERDE_LIMAO,
+                        [posicao.x, posicao.y, 10.0, 10.0],
+                        c.transform,
+                        gl,
+                    );
+                }
+
+                // Desenhando Formigas
+                for formiga in self.formigas.lock().unwrap().iter() {
+                    let posicao = &formiga.posicao.lock().unwrap();
+                    ellipse(
+                        VERMELHO,
+                        [posicao.x, posicao.y, 10.0, 10.0],
+                        c.transform,
+                        gl,
+                    );
+                }
             })
     }
 
@@ -61,6 +81,26 @@ impl Cenario {
     pub fn start(&mut self) {
         // Versão do OpenGL
         let opengl = OpenGL::V3_2;
+
+        // Criar grãos aleatórios igual a 0,01% do tamanho do cenário
+        let quantidade_graos = (self.dimensoes.0 * self.dimensoes.1 * 0.001) as i32;
+        for _ in 0..quantidade_graos {
+            let x = rand::random::<f64>() * self.dimensoes.0;
+            let y = rand::random::<f64>() * self.dimensoes.1;
+            self.adicionar_grao(Ponto { x, y });
+        }
+
+        // Criar 10 formigas aleatórias
+        for _ in 0..10 {
+            let x = rand::random::<f64>() * self.dimensoes.0;
+            let y = rand::random::<f64>() * self.dimensoes.1;
+            self.adicionar_formiga(Ponto { x, y });
+        }
+
+        // Iniciar movimento das formigas
+        for formiga in self.formigas.lock().unwrap().iter_mut() {
+            // formiga.start(self.dimensoes);
+        }
 
         self.window = Some(
             WindowSettings::new("Formigueiro", [self.dimensoes.0, self.dimensoes.1])
