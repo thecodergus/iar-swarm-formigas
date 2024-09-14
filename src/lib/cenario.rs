@@ -11,8 +11,8 @@ use piston::window::WindowSettings;
 
 pub struct Cenario {
     dimensoes: (f64, f64),
-    formigas: Vec<Formiga>,
-    graos: Vec<Arc<Mutex<Grao>>>,
+    formigas: Arc<Mutex<Vec<Formiga>>>,
+    graos: Arc<Mutex<Vec<Grao>>>,
     gl: Option<GlGraphics>,
     window: Option<Window>,
 }
@@ -21,8 +21,8 @@ impl Cenario {
     pub fn new(tamanho: (f64, f64)) -> Cenario {
         Cenario {
             dimensoes: tamanho,
-            formigas: vec![],
-            graos: vec![],
+            formigas: Arc::new(Mutex::new(vec![])),
+            graos: Arc::new(Mutex::new(vec![])),
             gl: None,
             window: None,
         }
@@ -41,6 +41,8 @@ impl Cenario {
             .expect("Sema acesso ao opengl")
             .draw(args.viewport(), |c, gl| {
                 clear(PRETO, gl);
+
+                // Desenhando Grãos
             })
     }
 
@@ -48,12 +50,12 @@ impl Cenario {
 
     // Adicionar formiga representado por um ponto da cor vermelha
     fn adicionar_formiga(&mut self, posicao: Ponto) {
-        self.formigas.push(Formiga::new(posicao));
+        self.formigas.lock().unwrap().push(Formiga::new(posicao));
     }
 
     // Adicionar grão representado por um ponto da cor verde
     fn adicionar_grao(&mut self, posicao: Ponto) {
-        self.graos.push(Arc::new(Mutex::new(Grao::new(posicao))));
+        self.graos.lock().unwrap().push(Grao::new(posicao));
     }
 
     pub fn start(&mut self) {

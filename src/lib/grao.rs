@@ -1,7 +1,7 @@
 use super::outros::Ponto;
 
 pub struct Grao {
-    posicao: Ponto,
+    pub posicao: Ponto,
 }
 
 impl Grao {
