@@ -99,7 +99,7 @@ impl Cenario {
 
         // Iniciar movimento das formigas
         for formiga in self.formigas.lock().unwrap().iter_mut() {
-            // formiga.start(self.dimensoes);
+            formiga.start(self.dimensoes);
         }
 
         self.window = Some(

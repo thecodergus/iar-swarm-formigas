@@ -20,49 +20,61 @@ impl Formiga {
         }
     }
 
-    pub fn novo_movimento(&mut self, tamanho_mapa: (f64, f64)) {
-        let mut rng = rand::thread_rng();
-        let numero_aleatorio = rng.gen_range(1..=4);
+    pub fn start(&mut self, tamanho_mapa: (f64, f64)) {
         let posicao = Arc::clone(&self.posicao);
+        let segurando_objeto = Arc::clone(&self.segurando_objeto);
+        let matar_thread = Arc::clone(&self.matar_thread);
+        const VELOCIDADE: f64 = 1.0;
 
-        // 1 - Cima
-        // 2 - Direita
-        // 3 - Baixo
-        // 4 - Esquerda
-        match numero_aleatorio {
-            1 => {
-                if posicao.lock().unwrap().y + 1.0 < tamanho_mapa.1 {
-                    posicao.lock().unwrap().y += 1.0;
-                }
-            }
-            2 => {
-                if posicao.lock().unwrap().x + 1.0 < tamanho_mapa.0 {
-                    posicao.lock().unwrap().x += 1.0;
-                }
-            }
-            3 => {
-                if posicao.lock().unwrap().y - 1.0 > 0.0 {
-                    posicao.lock().unwrap().y -= 1.0;
-                }
-            }
-            4 => {
-                if posicao.lock().unwrap().x - 1.0 > 0.0 {
-                    posicao.lock().unwrap().x -= 1.0;
-                }
-            }
-            _ => (),
-        }
-    }
-
-    pub fn start(mut self, tamanho_mapa: (f64, f64)) {
         thread::spawn(move || loop {
             let mut rng = rand::thread_rng();
-            let sleep_duration = Duration::from_millis(rng.gen_range(500..=1500));
+            // let sleep_duration = Duration::from_millis(rng.gen_range(500..=1500));
+            let sleep_duration = Duration::from_millis(100);
             thread::sleep(sleep_duration);
 
-            self.novo_movimento(tamanho_mapa);
+            let mut posicao = posicao.lock().unwrap_or_else(|e| {
+                eprintln!("Erro ao bloquear mutex: {}", e);
+                std::process::exit(1);
+            });
 
-            if *self.matar_thread.lock().unwrap() {
+            // posicao.novo_movimento(tamanho_mapa);
+            // Novo movimento da formiga
+            let numero_aleatorio = rng.gen_range(1..=4);
+
+            // 1 - Cima
+            // 2 - Direita
+            // 3 - Baixo
+            // 4 - Esquerda
+            match numero_aleatorio {
+                1 => {
+                    if posicao.y + (1.0 * VELOCIDADE) < tamanho_mapa.1 {
+                        posicao.y += (1.0 * VELOCIDADE);
+                    }
+                }
+                2 => {
+                    if posicao.x + (1.0 * VELOCIDADE) < tamanho_mapa.0 {
+                        posicao.x += (1.0 * VELOCIDADE);
+                    }
+                }
+                3 => {
+                    if posicao.y - (1.0 * VELOCIDADE) > 0.0 {
+                        posicao.y -= (1.0 * VELOCIDADE);
+                    }
+                }
+                4 => {
+                    if posicao.x - (1.0 * VELOCIDADE) > 0.0 {
+                        posicao.x -= (1.0 * VELOCIDADE);
+                    }
+                }
+                _ => (),
+            }
+
+            let matar_thread = matar_thread.lock().unwrap_or_else(|e| {
+                eprintln!("Erro ao bloquear mutex: {}", e);
+                std::process::exit(1);
+            });
+
+            if *matar_thread {
                 return;
             }
         });
