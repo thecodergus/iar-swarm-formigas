@@ -32,7 +32,7 @@ impl Cenario {
         use graphics::*;
         // Cores
         const PRETO: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-        const VERDE_LIMAO: [f32; 4] = [191.0, 255.0, 0.0, 1.0];
+        const VERDE_LIMAO: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
         const VERMELHO: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
         // Iniciando desenho
