@@ -56,7 +56,7 @@ impl Formiga {
     }
 }
 
-pub fn novo_movimento(posicao: &mut Ponto, tamanho_mapa: (f64, f64), rng: &mut rand::prelude::ThreadRng) {
+fn novo_movimento(posicao: &mut Ponto, tamanho_mapa: (f64, f64), rng: &mut rand::prelude::ThreadRng) {
     let numero_aleatorio = rng.gen_range(1..=4);
 
     match numero_aleatorio {
