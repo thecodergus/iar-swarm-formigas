@@ -19,11 +19,11 @@ pub struct Cenario {
 }
 
 impl Cenario {
-    pub fn new(tamanho: (f64, f64)) -> Cenario {
+    pub fn new(tamanho: (f64, f64), formigas: Vec<Formiga>, graos: Vec<Grao>) -> Cenario {
         Cenario {
             dimensoes: tamanho,
-            formigas: Arc::new(Mutex::new(vec![])),
-            graos: Arc::new(Mutex::new(vec![])),
+            formigas: Arc::new(Mutex::new(formigas)),
+            graos: Arc::new(Mutex::new(graos)),
             gl: None,
             window: None,
         }
@@ -91,23 +91,6 @@ impl Cenario {
     pub fn start(&mut self) {
         // Versão do OpenGL
         let opengl = OpenGL::V3_2;
-
-        // Criar grãos aleatórios igual a 0,01% do tamanho do cenário
-        let quantidade_graos = (self.dimensoes.0 * self.dimensoes.1 * 0.001) as i32;
-        let mut rng = rand::thread_rng();
-
-        for _ in 0..quantidade_graos {
-            let x = rng.gen_range(0..=self.dimensoes.0 as i32);
-            let y = rng.gen_range(0..=self.dimensoes.1 as i32);
-            self.adicionar_grao(Ponto { x, y });
-        }
-
-        // Criar 10 formigas aleatórias
-        for _ in 0..10 {
-            let x = rng.gen_range(0..=self.dimensoes.0 as i32);
-            let y = rng.gen_range(0..=self.dimensoes.1 as i32);
-            self.adicionar_formiga(Ponto { x, y });
-        }
 
         // Iniciar movimento das formigas
         for formiga in self.formigas.lock().unwrap().iter_mut() {

@@ -2,7 +2,7 @@ use super::grao::Grao;
 use super::outros::Ponto;
 use rand::Rng;
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{thread, vec};
 use std::time::Duration;
 
 pub struct Formiga {
@@ -82,4 +82,18 @@ fn novo_movimento(posicao: &mut Ponto, tamanho_mapa: (f64, f64), rng: &mut rand:
         }
         _ => (),
     }
+}
+
+pub fn gerar_formigas(numero: i32, tamanho_mapa: (i32, i32)) -> Vec<Formiga>{
+    // Criar 10 formigas aleatórias
+    let mut rng = rand::thread_rng();
+    let mut formigas: Vec<Formiga> = vec![];
+
+    for _ in 0..numero {
+        let x = rng.gen_range(0..=tamanho_mapa.0);
+        let y = rng.gen_range(0..=tamanho_mapa.1);
+        formigas.push(Formiga::new(Ponto { x, y }));
+    }
+
+    formigas
 }
