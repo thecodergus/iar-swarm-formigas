@@ -48,7 +48,7 @@ impl Cenario {
                     let posicao = &grao.posicao;
                     ellipse(
                         VERDE_LIMAO,
-                        [posicao.x as f64, posicao.y as f64, 10.0, 10.0],
+                        [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
                         c.transform,
                         gl,
                     );
@@ -59,7 +59,7 @@ impl Cenario {
                     let posicao = &formiga.posicao.lock().unwrap();
                     ellipse(
                         VERMELHO,
-                        [posicao.x as f64, posicao.y as f64, 10.0, 10.0],
+                        [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
                         c.transform,
                         gl,
                     );
