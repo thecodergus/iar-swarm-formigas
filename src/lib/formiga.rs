@@ -29,7 +29,7 @@ impl Formiga {
         thread::spawn(move || loop {
             let mut rng = rand::thread_rng();
             // let sleep_duration = Duration::from_millis(rng.gen_range(500..=1500));
-            let sleep_duration = Duration::from_millis(100);
+            let sleep_duration = Duration::from_millis(1);
             thread::sleep(sleep_duration);
 
             let mut posicao = posicao.lock().unwrap_or_else(|e| {
