@@ -71,13 +71,22 @@ impl Cenario {
 
     // Adicionar formiga representado por um ponto da cor vermelha
     fn adicionar_formiga(&mut self, posicao: Ponto) {
-        self.formigas.lock().unwrap().push(Formiga::new(posicao));
+        if let Ok(mut formigas) = self.formigas.lock() {
+            formigas.push(Formiga::new(posicao));
+        } else {
+            eprintln!("Erro ao bloquear mutex para adicionar formiga");
+        }
     }
 
     // Adicionar grão representado por um ponto da cor verde
     fn adicionar_grao(&mut self, posicao: Ponto) {
-        self.graos.lock().unwrap().push(Grao::new(posicao));
+        if let Ok(mut graos) = self.graos.lock() {
+            graos.push(Grao::new(posicao));
+        } else {
+            eprintln!("Erro ao bloquear mutex para adicionar grão");
+        }
     }
+
 
     pub fn start(&mut self) {
         // Versão do OpenGL
