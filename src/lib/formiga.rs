@@ -24,7 +24,7 @@ impl Formiga {
         let posicao = Arc::clone(&self.posicao);
         let segurando_objeto = Arc::clone(&self.segurando_objeto);
         let matar_thread = Arc::clone(&self.matar_thread);
-        const VELOCIDADE: f64 = 1.0;
+        const VELOCIDADE: i32 = 1;
 
         thread::spawn(move || loop {
             let mut rng = rand::thread_rng();
@@ -47,23 +47,23 @@ impl Formiga {
             // 4 - Esquerda
             match numero_aleatorio {
                 1 => {
-                    if posicao.y + (1.0 * VELOCIDADE) < tamanho_mapa.1 {
-                        posicao.y += (1.0 * VELOCIDADE);
+                    if posicao.y + (1 * VELOCIDADE) < tamanho_mapa.1 as i32 {
+                        posicao.y += (1 * VELOCIDADE);
                     }
                 }
                 2 => {
-                    if posicao.x + (1.0 * VELOCIDADE) < tamanho_mapa.0 {
-                        posicao.x += (1.0 * VELOCIDADE);
+                    if posicao.x + (1 * VELOCIDADE) < tamanho_mapa.0 as i32 {
+                        posicao.x += (1 * VELOCIDADE);
                     }
                 }
                 3 => {
-                    if posicao.y - (1.0 * VELOCIDADE) > 0.0 {
-                        posicao.y -= (1.0 * VELOCIDADE);
+                    if posicao.y - (1 * VELOCIDADE) > 0 {
+                        posicao.y -= (1 * VELOCIDADE);
                     }
                 }
                 4 => {
-                    if posicao.x - (1.0 * VELOCIDADE) > 0.0 {
-                        posicao.x -= (1.0 * VELOCIDADE);
+                    if posicao.x - (1 * VELOCIDADE) > 0 {
+                        posicao.x -= (1 * VELOCIDADE);
                     }
                 }
                 _ => (),

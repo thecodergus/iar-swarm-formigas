@@ -8,6 +8,7 @@ use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::window::WindowSettings;
+use rand::Rng;
 
 pub struct Cenario {
     dimensoes: (f64, f64),
@@ -47,7 +48,7 @@ impl Cenario {
                     let posicao = &grao.posicao;
                     ellipse(
                         VERDE_LIMAO,
-                        [posicao.x, posicao.y, 10.0, 10.0],
+                        [posicao.x as f64, posicao.y as f64, 10.0, 10.0],
                         c.transform,
                         gl,
                     );
@@ -58,7 +59,7 @@ impl Cenario {
                     let posicao = &formiga.posicao.lock().unwrap();
                     ellipse(
                         VERMELHO,
-                        [posicao.x, posicao.y, 10.0, 10.0],
+                        [posicao.x as f64, posicao.y as f64, 10.0, 10.0],
                         c.transform,
                         gl,
                     );
@@ -84,16 +85,18 @@ impl Cenario {
 
         // Criar grãos aleatórios igual a 0,01% do tamanho do cenário
         let quantidade_graos = (self.dimensoes.0 * self.dimensoes.1 * 0.001) as i32;
+        let mut rng = rand::thread_rng();
+
         for _ in 0..quantidade_graos {
-            let x = rand::random::<f64>() * self.dimensoes.0;
-            let y = rand::random::<f64>() * self.dimensoes.1;
+            let x = rng.gen_range(0..=self.dimensoes.0 as i32);
+            let y = rng.gen_range(0..=self.dimensoes.1 as i32);
             self.adicionar_grao(Ponto { x, y });
         }
 
         // Criar 10 formigas aleatórias
         for _ in 0..10 {
-            let x = rand::random::<f64>() * self.dimensoes.0;
-            let y = rand::random::<f64>() * self.dimensoes.1;
+            let x = rng.gen_range(0..=self.dimensoes.0 as i32);
+            let y = rng.gen_range(0..=self.dimensoes.1 as i32);
             self.adicionar_formiga(Ponto { x, y });
         }
 
