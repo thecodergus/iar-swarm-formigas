@@ -22,7 +22,7 @@ impl Formiga {
         }
     }
 
-    pub fn start(&mut self, tamanho_mapa: (f64, f64)) {
+    pub fn start(&mut self, tamanho_mapa: (f64, f64), graos: Arc<Mutex<Vec<Grao>>>) {
         let posicao = Arc::clone(&self.posicao);
         let segurando_objeto = Arc::clone(&self.segurando_objeto);
         let matar_thread = Arc::clone(&self.matar_thread);
