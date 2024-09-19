@@ -4,8 +4,10 @@ use rand::Rng;
 use std::sync::{Arc, Mutex};
 use std::{thread, vec};
 use std::time::Duration;
+use uuid::Uuid;
 
 pub struct Formiga {
+    pub id: Uuid,
     pub posicao: Arc<Mutex<Ponto>>,
     pub segurando_objeto: Arc<Mutex<Option<Grao>>>,
     matar_thread: Arc<Mutex<bool>>,
@@ -16,93 +18,87 @@ const VELOCIDADE: i32 = 1;
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
         Formiga {
+            id: Uuid::new_v4(),
             posicao: Arc::new(Mutex::new(ponto_surgimento)),
             segurando_objeto: Arc::new(Mutex::new(None)),
             matar_thread: Arc::new(Mutex::new(false)),
         }
     }
 
-    pub fn start(&mut self, tamanho_mapa: (f64, f64), mut graos: Arc<Mutex<Vec<Grao>>>) {
+    pub fn start(&mut self, tamanho_mapa: (f64, f64), graos: Arc<Mutex<Vec<Grao>>>) {
         let posicao = Arc::clone(&self.posicao);
         let segurando_objeto = Arc::clone(&self.segurando_objeto);
         let matar_thread = Arc::clone(&self.matar_thread);
 
-        thread::spawn(move || loop {
+        thread::spawn(move || {
             let mut rng = rand::thread_rng();
-            let sleep_duration = Duration::from_millis(1);
-            thread::sleep(sleep_duration);
 
-            let mut posicao = posicao.lock().unwrap_or_else(|e| {
-                eprintln!("Erro ao bloquear mutex: {}", e);
-                std::process::exit(1);
-            });
-
-            // Fazendo as ações da formiga
-            novo_movimento(&mut posicao, tamanho_mapa, &mut rng);
-
-            let graos_por_perto = procurar_graos_por_perto(&posicao, graos.lock().unwrap_or_else(|e| {
-                eprintln!("Erro ao bloquear mutex: {}", e);
-                std::process::exit(1);
-            }).as_ref());
-
-            let num_celulas_ao_redor: usize = 8;
-            let num_itens_ao_redor: usize = graos_por_perto.len();
-            let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
-            
-            if segurando_objeto.lock().unwrap_or_else(|e| {
-                eprintln!("Erro ao bloquear mutex: {}", e);
-                std::process::exit(1);
-            }).is_some(){
-                // Largar Objeto
-                let pode_largar: f64 = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
-
-                if valor_aletorio <= pode_largar{
-                    // Retirando objeto da mão
-                    *segurando_objeto.lock().unwrap() = None;
-
-                    // Adicionando item novo na lista
-                    graos.lock().unwrap().push(Grao::new(*posicao));
-                }
-            }else{
-                // Pegar Objeto
-                let pode_pegar: f64 = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
-                
-                if valor_aletorio <= pode_pegar{
-                    let item_selecionado = graos_por_perto.first();
-
-                    if item_selecionado.is_some(){
-                        // Setando o item selecionado
-                        *segurando_objeto.lock().unwrap_or_else(|e| {
-                            eprintln!("Erro ao bloquear mutex: {}", e);
-                            std::process::exit(1);
-                        }) = item_selecionado.copied();
-
-                        // Removendo da lista de todos o item que não vou usar mais
-                        let graos_filtrados: Vec<Grao> = graos.lock().unwrap_or_else(|e| {
-                            eprintln!("Erro ao bloquear mutex: {}", e);
-                            std::process::exit(1);
-                        })  .iter()
-                            .filter(|g| g.posicao.x != item_selecionado.unwrap().posicao.x && g.posicao.y != item_selecionado.unwrap().posicao.y)
-                            .cloned()
-                            .collect();
-
-                        // Substiuindo o dado 
-                        *graos.lock().unwrap() = graos_filtrados;
+            loop {
+                // Verificação de matar_thread antes de continuar o loop
+                if let Ok(matar) = matar_thread.lock() {
+                    if *matar {
+                        return; // Encerra o loop e a thread
                     }
+                } else {
+                    eprintln!("Erro ao bloquear mutex: matar_thread");
+                    std::process::exit(1);
                 }
-            }
 
+                // Simulando o movimento
+                // thread::sleep(Duration::from_millis(1));
 
+                // Movendo a formiga
+                if let Ok(mut posicao) = posicao.lock() {
+                    novo_movimento(&mut posicao, tamanho_mapa, &mut rng);
+                } else {
+                    eprintln!("Erro ao bloquear mutex: posicao");
+                    std::process::exit(1);
+                }
 
-            // Fim das ações da formiga
+                // Verificando se há grãos por perto
+                let graos_por_perto;
+                if let Ok(graos_guard) = graos.lock() {
+                    graos_por_perto = procurar_graos_por_perto(&posicao.lock().unwrap(), &graos_guard);
+                } else {
+                    eprintln!("Erro ao bloquear mutex: graos");
+                    std::process::exit(1);
+                }
 
-            let matar_thread = matar_thread.lock().unwrap_or_else(|e| {
-                eprintln!("Erro ao bloquear mutex: {}", e);
-                std::process::exit(1);
-            });
+                let num_celulas_ao_redor = 8;
+                let num_itens_ao_redor = graos_por_perto.len();
+                let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
 
-            if *matar_thread {
-                return;
+                // Manipulação de segurando_objeto
+                if let Ok(mut objeto_guard) = segurando_objeto.lock() {
+                    if objeto_guard.is_some() {
+                        // Largar o objeto
+                        let pode_largar = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
+                        if valor_aletorio <= pode_largar {
+                            *objeto_guard = None; // Retira o objeto da mão
+
+                            // Adiciona o grão ao vetor
+                            if let Ok(mut graos_guard) = graos.lock() {
+                                graos_guard.push(Grao::new(*posicao.lock().unwrap()));
+                            }
+                        }
+                    } else {
+                        // Pegar um objeto
+                        let pode_pegar = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
+                        if valor_aletorio <= pode_pegar {
+                            if let Some(item_selecionado) = graos_por_perto.first().cloned() {
+                                *objeto_guard = Some(item_selecionado.clone()); // Pega o item
+
+                                // Remove o item da lista de grãos
+                                if let Ok(mut graos_guard) = graos.lock() {
+                                    graos_guard.retain(|g| g.id != item_selecionado.id);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    eprintln!("Erro ao bloquear mutex: segurando_objeto");
+                    std::process::exit(1);
+                }
             }
         });
     }

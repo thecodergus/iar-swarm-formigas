@@ -31,40 +31,51 @@ impl Cenario {
 
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
-        // Cores
+        // Definindo cores
         const PRETO: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
         const VERDE_LIMAO: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
         const VERMELHO: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
-        // Iniciando desenho
-        self.gl
-            .as_mut()
-            .expect("Sema acesso ao opengl")
-            .draw(args.viewport(), |c, gl| {
+        // Travando o OpenGL para desenhar
+        if let Some(ref mut gl) = self.gl {
+            gl.draw(args.viewport(), |c, gl| {
+                // Limpa a tela com a cor preta
                 clear(PRETO, gl);
 
-                // Desenhando Grãos
-                for grao in self.graos.lock().unwrap().iter() {
-                    let posicao = &grao.posicao;
-                    ellipse(
-                        VERDE_LIMAO,
-                        [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
-                        c.transform,
-                        gl,
-                    );
+                // Desenhando os grãos (na cor verde-limão)
+                if let Ok(graos_guard) = self.graos.lock() {
+                    for grao in graos_guard.iter() {
+                        let posicao = &grao.posicao;
+                        ellipse(
+                            VERDE_LIMAO,
+                            [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
+                            c.transform,
+                            gl,
+                        );
+                    }
+                } else {
+                    eprintln!("Erro ao bloquear mutex para desenhar grãos");
                 }
 
-                // Desenhando Formigas
-                for formiga in self.formigas.lock().unwrap().iter() {
-                    let posicao = &formiga.posicao.lock().unwrap();
-                    ellipse(
-                        VERMELHO,
-                        [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
-                        c.transform,
-                        gl,
-                    );
+                // Desenhando as formigas (na cor vermelha)
+                if let Ok(formigas_guard) = self.formigas.lock() {
+                    for formiga in formigas_guard.iter() {
+                        if let Ok(posicao) = formiga.posicao.lock() {
+                            ellipse(
+                                VERMELHO,
+                                [posicao.x as f64, posicao.y as f64, 5.0, 5.0],
+                                c.transform,
+                                gl,
+                            );
+                        } else {
+                            eprintln!("Erro ao bloquear mutex para desenhar formiga");
+                        }
+                    }
+                } else {
+                    eprintln!("Erro ao bloquear mutex para desenhar formigas");
                 }
-            })
+            });
+        }
     }
 
     fn update(&self, args: &UpdateArgs) {}

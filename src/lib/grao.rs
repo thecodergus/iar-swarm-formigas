@@ -2,15 +2,20 @@ use std::vec;
 
 use super::outros::Ponto;
 use rand::Rng;
+use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Grao {
+    pub id: Uuid,
     pub posicao: Ponto,
 }
 
 impl Grao {
     pub fn new(posicao: Ponto) -> Grao {
-        Grao { posicao }
+        Grao { 
+            id: Uuid::new_v4(), 
+            posicao 
+        }
     }
 }
 
