@@ -74,12 +74,11 @@ impl Formiga {
                         // Largar o objeto
                         let pode_largar = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
                         if valor_aletorio <= pode_largar {
+                            *objeto_guard = None; // Retira o objeto da mão
                             
                             // Adiciona o grão ao vetor
                             if let Ok(mut graos_guard) = graos.lock() {
-                                objeto_guard.unwrap().posicao = posicao.lock().unwrap().clone();
-                                graos_guard.push(objeto_guard.unwrap());
-                                *objeto_guard = None; // Retira o objeto da mão
+                                graos_guard.push(Grao::new(*posicao.lock().unwrap()));
                             }
 
                         }
