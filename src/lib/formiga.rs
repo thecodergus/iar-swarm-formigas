@@ -22,7 +22,7 @@ impl Formiga {
         }
     }
 
-    pub fn start(&mut self, tamanho_mapa: (f64, f64), graos: Arc<Mutex<Vec<Grao>>>) {
+    pub fn start(&mut self, tamanho_mapa: (f64, f64), mut graos: Arc<Mutex<Vec<Grao>>>) {
         let posicao = Arc::clone(&self.posicao);
         let segurando_objeto = Arc::clone(&self.segurando_objeto);
         let matar_thread = Arc::clone(&self.matar_thread);
@@ -37,11 +37,60 @@ impl Formiga {
                 std::process::exit(1);
             });
 
+            // Fazendo as ações da formiga
             novo_movimento(&mut posicao, tamanho_mapa, &mut rng);
+
             let graos_por_perto = procurar_graos_por_perto(&posicao, graos.lock().unwrap_or_else(|e| {
                 eprintln!("Erro ao bloquear mutex: {}", e);
                 std::process::exit(1);
             }).as_ref());
+
+            let num_celulas_ao_redor: usize = 8;
+            let num_itens_ao_redor: usize = graos_por_perto.len();
+            let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
+            
+            if segurando_objeto.lock().unwrap_or_else(|e| {
+                eprintln!("Erro ao bloquear mutex: {}", e);
+                std::process::exit(1);
+            }).is_some(){
+                // Largar Objeto
+                let pode_largar: f64 = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
+
+                if valor_aletorio <= pode_largar{
+
+                }
+            }else{
+                // Pegar Objeto
+                let pode_pegar: f64 = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
+                
+                if valor_aletorio <= pode_pegar{
+                    let item_selecionado = graos_por_perto.first();
+
+                    if item_selecionado.is_some(){
+                        // Setando o item selecionado
+                        *segurando_objeto.lock().unwrap_or_else(|e| {
+                            eprintln!("Erro ao bloquear mutex: {}", e);
+                            std::process::exit(1);
+                        }) = item_selecionado.copied();
+
+                        // Removendo da lista de todos o item que não vou usar mais
+                        let graos_filtrados: Vec<Grao> = graos.lock().unwrap_or_else(|e| {
+                            eprintln!("Erro ao bloquear mutex: {}", e);
+                            std::process::exit(1);
+                        })  .iter()
+                            .filter(|g| g.posicao.x != item_selecionado.unwrap().posicao.x && g.posicao.y != item_selecionado.unwrap().posicao.y)
+                            .cloned()
+                            .collect();
+
+                        // Substiuindo o dado 
+                        *graos.lock().unwrap() = graos_filtrados;
+                    }
+                }
+            }
+
+
+
+            // Fim das ações da formiga
 
             let matar_thread = matar_thread.lock().unwrap_or_else(|e| {
                 eprintln!("Erro ao bloquear mutex: {}", e);
