@@ -3,6 +3,7 @@ use std::vec;
 use super::outros::Ponto;
 use rand::Rng;
 
+#[derive(Clone, Copy, Debug)]
 pub struct Grao {
     pub posicao: Ponto,
 }

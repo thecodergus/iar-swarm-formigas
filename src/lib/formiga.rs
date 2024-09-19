@@ -1,4 +1,4 @@
-use super::grao::Grao;
+use super::grao::{self, Grao};
 use super::outros::Ponto;
 use rand::Rng;
 use std::sync::{Arc, Mutex};
@@ -38,6 +38,10 @@ impl Formiga {
             });
 
             novo_movimento(&mut posicao, tamanho_mapa, &mut rng);
+            let graos_por_perto = procurar_graos_por_perto(&posicao, graos.lock().unwrap_or_else(|e| {
+                eprintln!("Erro ao bloquear mutex: {}", e);
+                std::process::exit(1);
+            }).as_ref());
 
             let matar_thread = matar_thread.lock().unwrap_or_else(|e| {
                 eprintln!("Erro ao bloquear mutex: {}", e);
@@ -96,4 +100,16 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (i32, i32)) -> Vec<Formiga>{
     }
 
     formigas
+}
+
+fn procurar_graos_por_perto(posicao_formiga: &Ponto, graos: &Vec<Grao>) -> Vec<Grao>{
+    let mut resultado: Vec<Grao> = vec![];
+
+    for g in graos{
+        if (g.posicao.x - posicao_formiga.x).abs() <= 1 && (g.posicao.y - posicao_formiga.y).abs() <= 1{
+            resultado.push(*g);
+        }
+    }
+
+    return resultado;
 }
