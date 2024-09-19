@@ -57,7 +57,11 @@ impl Formiga {
                 let pode_largar: f64 = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
 
                 if valor_aletorio <= pode_largar{
+                    // Retirando objeto da mão
+                    *segurando_objeto.lock().unwrap() = None;
 
+                    // Adicionando item novo na lista
+                    graos.lock().unwrap().push(Grao::new(*posicao));
                 }
             }else{
                 // Pegar Objeto
