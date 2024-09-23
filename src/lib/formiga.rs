@@ -61,42 +61,7 @@ impl Formiga {
                 // Verificando se há grãos por perto
                 let graos_por_perto = procurar_graos_por_perto(Arc::clone(&posicao), Arc::clone(&graos));
 
-                let num_celulas_ao_redor = 8;
-                let num_itens_ao_redor = graos_por_perto.len();
-                let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
-
-                // Manipulação de segurando_objeto
-                if let Ok(mut objeto_guard) = segurando_objeto.lock() {
-                    if objeto_guard.is_some() {
-                        // Largar o objeto
-                        let pode_largar = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
-                        if valor_aletorio <= pode_largar {
-                            *objeto_guard = None; // Retira o objeto da mão
-                            
-                            // Adiciona o grão ao vetor
-                            if let Ok(mut graos_guard) = graos.lock() {
-                                graos_guard.push(Grao::new(*posicao.lock().unwrap()));
-                            }
-
-                        }
-                    } else {
-                        // Pegar um objeto
-                        let pode_pegar = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
-                        if valor_aletorio <= pode_pegar {
-                            if let Some(item_selecionado) = graos_por_perto.first().cloned() {
-                                *objeto_guard = Some(item_selecionado.clone()); // Pega o item
-
-                                // Remove o item da lista de grãos
-                                if let Ok(mut graos_guard) = graos.lock() {
-                                    graos_guard.retain(|g| g.id != item_selecionado.id);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    eprintln!("Erro ao bloquear mutex: segurando_objeto");
-                    std::process::exit(1);
-                }
+                segurar_objeto(Arc::clone(&posicao), Arc::clone(&segurando_objeto), graos_por_perto, Arc::clone(&graos));
             }
         });
     }
@@ -196,4 +161,44 @@ fn procurar_graos_por_perto(
     }
 
     resultado
+}
+
+fn segurar_objeto(posicao_formiga: Arc<Mutex<Ponto>>, segurando_objeto: Arc<Mutex<Option<Grao>>>, graos_perto: Vec<Grao>, graos: Arc<Mutex<Vec<Grao>>>){
+    let num_celulas_ao_redor = 8;
+    let num_itens_ao_redor = graos_perto.len();
+    let mut rng = rand::thread_rng();
+    let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
+
+    // Manipulação de segurando_objeto
+    if let Ok(mut objeto_guard) = segurando_objeto.lock() {
+        if objeto_guard.is_some() {
+            // Largar o objeto
+            let pode_largar = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
+            if valor_aletorio <= pode_largar {
+                *objeto_guard = None; // Retira o objeto da mão
+                
+                // Adiciona o grão ao vetor
+                if let Ok(mut graos_guard) = graos.lock() {
+                    graos_guard.push(Grao::new(*posicao_formiga.lock().unwrap()));
+                }
+
+            }
+        } else {
+            // Pegar um objeto
+            let pode_pegar = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
+            if valor_aletorio <= pode_pegar {
+                if let Some(item_selecionado) = graos_perto.first().cloned() {
+                    *objeto_guard = Some(item_selecionado.clone()); // Pega o item
+
+                    // Remove o item da lista de grãos
+                    if let Ok(mut graos_guard) = graos.lock() {
+                        graos_guard.retain(|g| g.id != item_selecionado.id);
+                    }
+                }
+            }
+        }
+    } else {
+        eprintln!("Erro ao bloquear mutex: segurando_objeto");
+        std::process::exit(1);
+    }
 }
