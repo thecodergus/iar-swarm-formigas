@@ -1,7 +1,7 @@
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Ponto{
+pub struct Ponto {
     pub x: f64,
-    pub y: f64
+    pub y: f64,
 }
 
 pub fn distancia_euclidiana(p1: &Ponto, p2: &Ponto) -> f64 {

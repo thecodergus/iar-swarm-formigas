@@ -25,7 +25,12 @@ impl Formiga {
         }
     }
 
-    pub fn start(&mut self, tamanho_mapa: (f64, f64), graos: Arc<Mutex<Vec<Grao>>>, contador: Arc<Mutex<i64>>) {
+    pub fn start(
+        &mut self,
+        tamanho_mapa: (f64, f64),
+        graos: Arc<Mutex<Vec<Grao>>>,
+        contador: Arc<Mutex<i64>>,
+    ) {
         let posicao: Arc<Mutex<Ponto>> = Arc::clone(&self.posicao);
         let segurando_objeto: Arc<Mutex<Option<Grao>>> = Arc::clone(&self.segurando_objeto);
         let matar_thread: Arc<Mutex<bool>> = Arc::clone(&self.matar_thread);
@@ -38,11 +43,11 @@ impl Formiga {
                 if let Ok(matar) = matar_thread.lock() {
                     if *matar {
                         return; // Encerra o loop e a thread
-                    }else{
-                        if let Ok(mut contador_guard) = contador.lock(){
+                    } else {
+                        if let Ok(mut contador_guard) = contador.lock() {
                             if *contador_guard <= 0 {
                                 return;
-                            }else{
+                            } else {
                                 *contador_guard -= 1;
                             }
                         }
@@ -54,20 +59,25 @@ impl Formiga {
 
                 // Movendo a formiga
                 let nova_posicao = nova_posicao(Arc::clone(&posicao), tamanho_mapa);
-                if let Ok(mut posicao_guard) = posicao.lock(){
+                if let Ok(mut posicao_guard) = posicao.lock() {
                     *posicao_guard = nova_posicao;
                 }
 
                 // Verificando se há grãos por perto
-                let graos_por_perto = encontrar_graos_vizinhanca(Arc::clone(&posicao), Arc::clone(&graos));
+                let graos_por_perto =
+                    encontrar_graos_vizinhanca(Arc::clone(&posicao), Arc::clone(&graos));
 
-                segurar_objeto(Arc::clone(&posicao), Arc::clone(&segurando_objeto), graos_por_perto, Arc::clone(&graos));
+                segurar_objeto(
+                    Arc::clone(&posicao),
+                    Arc::clone(&segurando_objeto),
+                    graos_por_perto,
+                    Arc::clone(&graos),
+                );
             }
         });
     }
 
-
-   pub fn stop(&mut self) {
+    pub fn stop(&mut self) {
         if let Ok(mut matar_guard) = self.matar_thread.lock() {
             *matar_guard = true;
         } else {
@@ -76,13 +86,12 @@ impl Formiga {
     }
 }
 
-
-fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto{
+fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
     let mut rng = rand::thread_rng();
     let num_aleatorio: i32 = rng.gen_range(1..=4);
 
-    if let Ok(posicao_guard) = posicao.lock(){
-            let mut nova_posicao = match num_aleatorio {
+    if let Ok(posicao_guard) = posicao.lock() {
+        let mut nova_posicao = match num_aleatorio {
             1 => Ponto {
                 x: posicao_guard.x,
                 y: posicao_guard.y + (1.0 * VELOCIDADE),
@@ -119,13 +128,13 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto{
         }
 
         nova_posicao
-    }else{
+    } else {
         eprintln!("Erro ao bloquear mutex: segurando_objeto");
         std::process::exit(1);
     }
 }
 
-pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga>{
+pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
     // Criar 10 formigas aleatórias
     let mut rng = rand::thread_rng();
     let mut formigas: Vec<Formiga> = vec![];
@@ -140,8 +149,8 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga>{
 }
 
 fn encontrar_graos_vizinhanca(
-    posicao_formiga: Arc<Mutex<Ponto>>, 
-    graos: Arc<Mutex<Vec<Grao>>>
+    posicao: Arc<Mutex<Ponto>>,
+    graos: Arc<Mutex<Vec<Grao>>>,
 ) -> Vec<Grao> {
     let mut resultado: Vec<Grao> = vec![];
 
@@ -149,16 +158,16 @@ fn encontrar_graos_vizinhanca(
     let tamanho_vizinhanca = 1.0;
 
     // Trava o mutex para acessar a posição da formiga
-    if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
+    if let Ok(posicao_guard) = posicao.lock() {
         // Trava o mutex para acessar a lista de grãos
         if let Ok(graos_guard) = graos.lock() {
             for grao in graos_guard.iter() {
-                let distancia_x = (grao.posicao.x - posicao_formiga_guard.x).abs();
-                let distancia_y = (grao.posicao.y - posicao_formiga_guard.y).abs();
-                
+                let distancia_x = (grao.posicao.x - posicao_guard.x).abs();
+                let distancia_y = (grao.posicao.y - posicao_guard.y).abs();
+
                 // Se o grão está dentro da vizinhança 3x3 (distância <= 1.0 em x e y)
                 if distancia_x <= tamanho_vizinhanca && distancia_y <= tamanho_vizinhanca {
-                    resultado.push(grao.clone());  // Adiciona o grão à lista de resultado
+                    resultado.push(grao.clone()); // Adiciona o grão à lista de resultado
                 }
             }
         } else {
@@ -171,8 +180,12 @@ fn encontrar_graos_vizinhanca(
     resultado
 }
 
-
-fn segurar_objeto(posicao_formiga: Arc<Mutex<Ponto>>, segurando_objeto: Arc<Mutex<Option<Grao>>>, graos_perto: Vec<Grao>, graos: Arc<Mutex<Vec<Grao>>>){
+fn segurar_objeto(
+    posicao_formiga: Arc<Mutex<Ponto>>,
+    segurando_objeto: Arc<Mutex<Option<Grao>>>,
+    graos_perto: Vec<Grao>,
+    graos: Arc<Mutex<Vec<Grao>>>,
+) {
     let num_celulas_ao_redor = 8;
     let num_itens_ao_redor = graos_perto.len();
     let mut rng = rand::thread_rng();
@@ -181,34 +194,10 @@ fn segurar_objeto(posicao_formiga: Arc<Mutex<Ponto>>, segurando_objeto: Arc<Mute
     // Manipulação de segurando_objeto
     if let Ok(mut objeto_guard) = segurando_objeto.lock() {
         if objeto_guard.is_some() {
-            // Largar o objeto
-            let pode_largar = num_itens_ao_redor as f64 / num_celulas_ao_redor as f64;
-            if valor_aletorio <= pode_largar {
-                *objeto_guard = None; // Retira o objeto da mão
-                
-                // Adiciona o grão ao vetor
-                if let Ok(mut graos_guard) = graos.lock() {
-                    graos_guard.push(Grao::new(*posicao_formiga.lock().unwrap()));
-                }
-
-            }
         } else {
-            // Pegar um objeto
-            let pode_pegar = 1.0 - (num_itens_ao_redor as f64 / num_celulas_ao_redor as f64);
-            if valor_aletorio <= pode_pegar {
-                if let Some(item_selecionado) = graos_perto.first().cloned() {
-                    *objeto_guard = Some(item_selecionado.clone()); // Pega o item
-
-                    // Remove o item da lista de grãos
-                    if let Ok(mut graos_guard) = graos.lock() {
-                        graos_guard.retain(|g| g.id != item_selecionado.id);
-                    }
-                }
-            }
         }
     } else {
         eprintln!("Erro ao bloquear mutex: segurando_objeto");
         std::process::exit(1);
     }
 }
-

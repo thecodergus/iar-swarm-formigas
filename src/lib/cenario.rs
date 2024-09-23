@@ -18,36 +18,38 @@ pub struct Cenario {
     graos: Arc<Mutex<Vec<Grao>>>,
 }
 
-impl Cenario{
-    pub fn new(dimensoes: (f64, f64), formigas: Vec<Formiga>, graos: Vec<Grao>) -> Self{
+impl Cenario {
+    pub fn new(dimensoes: (f64, f64), formigas: Vec<Formiga>, graos: Vec<Grao>) -> Self {
         Cenario {
-            dimensoes: dimensoes, 
-            formigas: formigas, 
-            graos: Arc::new(Mutex::new(graos)) 
+            dimensoes: dimensoes,
+            formigas: formigas,
+            graos: Arc::new(Mutex::new(graos)),
         }
     }
-    
 
     pub fn start(&mut self, numero_interacoes: i64) {
-    // Iniciar Variaveis
+        // Iniciar Variaveis
         let contador: Arc<Mutex<i64>> = Arc::new(Mutex::new(numero_interacoes));
 
         // Iniciar Spawn de formigas
         for formiga in &mut self.formigas {
-            formiga.start(self.dimensoes.clone(), Arc::clone(&self.graos), Arc::clone(&contador));
+            formiga.start(
+                self.dimensoes.clone(),
+                Arc::clone(&self.graos),
+                Arc::clone(&contador),
+            );
         }
 
         loop {
-            if let Ok(contador_guard) = contador.lock(){
-                if *contador_guard <= 0{
+            if let Ok(contador_guard) = contador.lock() {
+                if *contador_guard <= 0 {
                     // Gerar uma imagem final
                     println!("Fim do programa");
                     break;
-                }else{
+                } else {
                     // println!("Loop {}", contador_guard);
                 }
             }
         }
     }
-
 }
