@@ -43,6 +43,8 @@ impl Cenario{
                     // Gerar uma imagem final
                     println!("Fim do programa");
                     break;
+                }else{
+                    // println!("Loop {}", contador_guard);
                 }
             }
         }
