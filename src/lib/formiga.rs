@@ -53,8 +53,8 @@ impl Formiga {
                 }
 
                 // Movendo a formiga
+                let nova_posicao = nova_posicao(Arc::clone(&posicao), tamanho_mapa);
                 if let Ok(mut posicao_guard) = posicao.lock(){
-                    let nova_posicao = nova_posicao(Arc::clone(&posicao), tamanho_mapa);
                     *posicao_guard = nova_posicao;
                 }
 
