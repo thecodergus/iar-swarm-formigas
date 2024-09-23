@@ -1,5 +1,5 @@
 use super::grao::{self, Grao};
-use super::outros::Ponto;
+use super::outros::{distancia_euclidiana, Ponto};
 use rand::Rng;
 use std::sync::{Arc, Mutex};
 use std::{thread, vec};
@@ -59,7 +59,7 @@ impl Formiga {
                 }
 
                 // Verificando se há grãos por perto
-                let graos_por_perto = procurar_graos_por_perto(Arc::clone(&posicao), Arc::clone(&graos));
+                let graos_por_perto = encontrar_graos_vizinhanca(Arc::clone(&posicao), Arc::clone(&graos));
 
                 segurar_objeto(Arc::clone(&posicao), Arc::clone(&segurando_objeto), graos_por_perto, Arc::clone(&graos));
             }
@@ -67,8 +67,12 @@ impl Formiga {
     }
 
 
-    pub fn stop(mut self) {
-        *self.matar_thread.lock().unwrap() = true;
+   pub fn stop(&mut self) {
+        if let Ok(mut matar_guard) = self.matar_thread.lock() {
+            *matar_guard = true;
+        } else {
+            eprintln!("Erro ao tentar bloquear o mutex: matar_thread");
+        }
     }
 }
 
@@ -135,22 +139,26 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga>{
     formigas
 }
 
-fn procurar_graos_por_perto(
-    posicao_formiga: Arc<Mutex<Ponto>>,
+fn encontrar_graos_vizinhanca(
+    posicao_formiga: Arc<Mutex<Ponto>>, 
     graos: Arc<Mutex<Vec<Grao>>>
 ) -> Vec<Grao> {
     let mut resultado: Vec<Grao> = vec![];
 
-    // Tenta adquirir o lock no Mutex da posição da formiga
+    // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
+    let tamanho_vizinhanca = 1.0;
+
+    // Trava o mutex para acessar a posição da formiga
     if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
-        // Tenta adquirir o lock no Mutex da lista de grãos
+        // Trava o mutex para acessar a lista de grãos
         if let Ok(graos_guard) = graos.lock() {
-            // Itera sobre os grãos e realiza a comparação
-            for g in graos_guard.iter() {
-                if (g.posicao.x - posicao_formiga_guard.x).abs() <= 1.0
-                    && (g.posicao.y - posicao_formiga_guard.y).abs() <= 1.0
-                {
-                    resultado.push(g.clone()); // Clone para adicionar o grão à lista de resultado
+            for grao in graos_guard.iter() {
+                let distancia_x = (grao.posicao.x - posicao_formiga_guard.x).abs();
+                let distancia_y = (grao.posicao.y - posicao_formiga_guard.y).abs();
+                
+                // Se o grão está dentro da vizinhança 3x3 (distância <= 1.0 em x e y)
+                if distancia_x <= tamanho_vizinhanca && distancia_y <= tamanho_vizinhanca {
+                    resultado.push(grao.clone());  // Adiciona o grão à lista de resultado
                 }
             }
         } else {
@@ -162,6 +170,7 @@ fn procurar_graos_por_perto(
 
     resultado
 }
+
 
 fn segurar_objeto(posicao_formiga: Arc<Mutex<Ponto>>, segurando_objeto: Arc<Mutex<Option<Grao>>>, graos_perto: Vec<Grao>, graos: Arc<Mutex<Vec<Grao>>>){
     let num_celulas_ao_redor = 8;
@@ -202,3 +211,4 @@ fn segurar_objeto(posicao_formiga: Arc<Mutex<Ponto>>, segurando_objeto: Arc<Mute
         std::process::exit(1);
     }
 }
+
