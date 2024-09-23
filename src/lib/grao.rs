@@ -19,14 +19,14 @@ impl Grao {
     }
 }
 
-pub fn gerar_graos(numero: i32, tamanho_mapa: (i32, i32)) -> Vec<Grao>{
+pub fn gerar_graos(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Grao>{
     let mut graos: Vec<Grao> = vec![];
 
     let mut rng = rand::thread_rng();
         
     for _ in 0..numero {
-        let x = rng.gen_range(0..=tamanho_mapa.0);
-        let y = rng.gen_range(0..=tamanho_mapa.1);
+        let x = rng.gen_range(0.0..=tamanho_mapa.0);
+        let y = rng.gen_range(0.0..=tamanho_mapa.1);
         graos.push(Grao::new(Ponto { x, y }));
     }
 
