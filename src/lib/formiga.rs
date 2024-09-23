@@ -195,12 +195,22 @@ fn segurar_objeto(
     if let Ok(mut objeto_guard) = segurando_objeto.lock() {
         if let Ok(p) = posicao_formiga.lock() {
             if objeto_guard.is_some() {
+                // Largar item
+                if valor_aletorio <= pode_largar(*p, graos_perto.clone()) {
+                    if let Ok(mut graos) = graos.lock() {
+                        graos.push(Grao::new(*p));
+                    }
+                }
             } else {
+                // Pegar item
                 if valor_aletorio <= pode_pegar(*p, graos_perto.clone()) {
                     if let Ok(mut segurando_objeto_guard) = segurando_objeto.lock() {
                         match graos_perto.first() {
                             Some(o) => {
                                 *segurando_objeto_guard = Some(*o);
+                                if let Ok(mut graos) = graos.lock() {
+                                    graos.retain(|g| g.id != o.id);
+                                }
                             }
                             None => (),
                         }
