@@ -193,11 +193,50 @@ fn segurar_objeto(
 
     // Manipulação de segurando_objeto
     if let Ok(mut objeto_guard) = segurando_objeto.lock() {
-        if objeto_guard.is_some() {
-        } else {
+        if let Ok(p) = posicao_formiga.lock() {
+            if objeto_guard.is_some() {
+            } else {
+                if valor_aletorio <= pode_pegar(*p, graos_perto.clone()) {
+                    if let Ok(mut segurando_objeto_guard) = segurando_objeto.lock() {
+                        match graos_perto.first() {
+                            Some(o) => {
+                                *segurando_objeto_guard = Some(*o);
+                            }
+                            None => (),
+                        }
+                    }
+                }
+            }
         }
     } else {
         eprintln!("Erro ao bloquear mutex: segurando_objeto");
         std::process::exit(1);
     }
+}
+
+fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
+    // Hiperparametro
+    const ALPHA: f64 = 11.8;
+
+    if itens.len() != 0 {
+        (1.0 / (itens.len() as f64).powi(2))
+            * itens
+                .into_iter()
+                .map(|g| (1.0 - distancia_euclidiana(&p, &g.posicao)) / ALPHA)
+                .sum::<f64>()
+    } else {
+        0.0
+    }
+}
+
+fn pode_pegar(p: Ponto, itens_proximos: Vec<Grao>) -> f64 {
+    const K1: f64 = 0.3;
+    let fi: f64 = similaridade_entre_dado_vizinhanca(p, itens_proximos);
+    (K1 / (K1 + fi)).powi(2)
+}
+
+fn pode_largar(p: Ponto, itens_proximos: Vec<Grao>) -> f64 {
+    const K2: f64 = 0.6;
+    let fi: f64 = similaridade_entre_dado_vizinhanca(p, itens_proximos);
+    (fi / (K2 + fi)).powi(2)
 }
