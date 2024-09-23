@@ -53,11 +53,9 @@ impl Formiga {
                 }
 
                 // Movendo a formiga
-                if let Ok(mut posicao) = posicao.lock() {
-                    novo_movimento(&mut posicao, tamanho_mapa, &mut rng);
-                } else {
-                    eprintln!("Erro ao bloquear mutex: posicao");
-                    std::process::exit(1);
+                if let Ok(mut posicao_guard) = posicao.lock(){
+                    let nova_posicao = nova_posicao(Arc::clone(&posicao), tamanho_mapa);
+                    *posicao_guard = nova_posicao;
                 }
 
                 // Verificando se há grãos por perto
@@ -109,31 +107,52 @@ impl Formiga {
     }
 }
 
-fn novo_movimento(posicao: &mut Ponto, tamanho_mapa: (f64, f64), rng: &mut rand::prelude::ThreadRng) {
-    let numero_aleatorio = rng.gen_range(1..=4);
 
-    match numero_aleatorio {
-        1 => {
-            if posicao.y + (1.0 * VELOCIDADE) < tamanho_mapa.1 {
-                posicao.y += (1.0 * VELOCIDADE);
-            }
+fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto{
+    let mut rng = rand::thread_rng();
+    let num_aleatorio: i32 = rng.gen_range(1..=4);
+
+    if let Ok(posicao_guard) = posicao.lock(){
+            let mut nova_posicao = match num_aleatorio {
+            1 => Ponto {
+                x: posicao_guard.x,
+                y: posicao_guard.y + (1.0 * VELOCIDADE),
+            },
+            2 => Ponto {
+                x: posicao_guard.x + (1.0 * VELOCIDADE),
+                y: posicao_guard.y,
+            },
+            3 => Ponto {
+                x: posicao_guard.x,
+                y: posicao_guard.y - (1.0 * VELOCIDADE),
+            },
+            4 => Ponto {
+                x: posicao_guard.x - (1.0 * VELOCIDADE),
+                y: posicao_guard.y,
+            },
+            _ => Ponto {
+                x: posicao_guard.x,
+                y: posicao_guard.y, // Mantém a posição atual se o número aleatório não for esperado
+            },
+        };
+
+        // Verificação dos limites do mapa
+        if nova_posicao.x < 0.0 {
+            nova_posicao.x = 0.0;
+        } else if nova_posicao.x > tamanho_mapa.0 {
+            nova_posicao.x = tamanho_mapa.0;
         }
-        2 => {
-            if posicao.x + (1.0 * VELOCIDADE) < tamanho_mapa.0 {
-                posicao.x += (1.0 * VELOCIDADE);
-            }
+
+        if nova_posicao.y < 0.0 {
+            nova_posicao.y = 0.0;
+        } else if nova_posicao.y > tamanho_mapa.1 {
+            nova_posicao.y = tamanho_mapa.1;
         }
-        3 => {
-            if posicao.y - (1.0 * VELOCIDADE) > 0.0 {
-                posicao.y -= (1.0 * VELOCIDADE);
-            }
-        }
-        4 => {
-            if posicao.x - (1.0 * VELOCIDADE) > 0.0 {
-                posicao.x -= (1.0 * VELOCIDADE);
-            }
-        }
-        _ => (),
+
+        nova_posicao
+    }else{
+        eprintln!("Erro ao bloquear mutex: segurando_objeto");
+        std::process::exit(1);
     }
 }
 
