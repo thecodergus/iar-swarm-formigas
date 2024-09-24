@@ -54,9 +54,9 @@ impl Cenario {
                     }
                     break;
                 } else {
-                    if (1 / 4) * numero_interacoes == *contador_guard
-                        || (2 / 4) * numero_interacoes == *contador_guard
-                        || (3 / 4) * numero_interacoes == *contador_guard
+                    if (1 / 4) * numero_interacoes <= *contador_guard
+                        || (2 / 4) * numero_interacoes <= *contador_guard
+                        || (3 / 4) * numero_interacoes <= *contador_guard
                     {
                         println!("Loop {}", contador_guard);
                         match self
