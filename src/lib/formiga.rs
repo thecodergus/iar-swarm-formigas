@@ -72,6 +72,7 @@ impl Formiga {
                     Arc::clone(&segurando_objeto),
                     graos_por_perto,
                     Arc::clone(&graos),
+                    tamanho_mapa, // Adicionando o tamanho do mapa
                 );
             }
         });
@@ -185,6 +186,7 @@ fn segurar_objeto(
     segurando_objeto: Arc<Mutex<Option<Grao>>>,
     graos_perto: Vec<Grao>,
     graos: Arc<Mutex<Vec<Grao>>>,
+    tamanho_mapa: (f64, f64), // Adicionando tamanho do mapa para limitar a busca
 ) {
     let mut rng = rand::thread_rng();
     let valor_aleatorio: f64 = rng.gen_range(0.0..=1.0);
@@ -196,7 +198,28 @@ fn segurar_objeto(
             if objeto_guard.is_some() {
                 // Tentativa de largar o objeto
                 if valor_aleatorio <= pode_largar(*p, graos_perto.clone()) {
-                    if let Some(grao_atual) = objeto_guard.take() {
+                    if let Some(mut grao_atual) = objeto_guard.take() {
+                        // Checar se já existe um grão nessa posição
+                        if let Ok(graos_guard) = graos.lock() {
+                            let pos_ocupada = graos_guard.iter().any(|g| g.posicao == *p);
+
+                            if pos_ocupada {
+                                // Encontrar a posição vazia mais próxima
+                                if let Some(nova_posicao) =
+                                    encontrar_posicao_vazia(*p, &*graos_guard, tamanho_mapa)
+                                {
+                                    // Atualizar a posição do grão para o local vazio
+                                    grao_atual.posicao = nova_posicao;
+                                } else {
+                                    eprintln!("Nenhuma posição vazia encontrada.");
+                                    return;
+                                }
+                            } else {
+                                // Se não há outro grão, usa a posição atual da formiga
+                                grao_atual.posicao = *p;
+                            }
+                        }
+
                         // Adiciona o grão de volta à lista de grãos
                         if let Ok(mut graos_guard) = graos.lock() {
                             graos_guard.push(grao_atual);
@@ -204,7 +227,7 @@ fn segurar_objeto(
                     }
                 }
             } else {
-                // Encontrar o grão mais próximo da posição da formiga
+                // Lógica de pegar o grão continua igual...
                 if let Some(grao_mais_proximo) = graos_perto.iter().min_by(|g1, g2| {
                     let dist1 = distancia_euclidiana(&p, &g1.posicao);
                     let dist2 = distancia_euclidiana(&p, &g2.posicao);
@@ -212,12 +235,8 @@ fn segurar_objeto(
                         .partial_cmp(&dist2)
                         .unwrap_or(std::cmp::Ordering::Equal)
                 }) {
-                    // Tentativa de pegar o grão mais próximo
                     if valor_aleatorio <= pode_pegar(*p, graos_perto.clone()) {
-                        // Clona o grão mais próximo e o coloca em `segurando_objeto`
                         *objeto_guard = Some(grao_mais_proximo.clone());
-
-                        // Remover o grão da lista de grãos disponíveis
                         if let Ok(mut graos_guard) = graos.lock() {
                             graos_guard.retain(|g| g.id != grao_mais_proximo.id);
                         }
@@ -229,6 +248,66 @@ fn segurar_objeto(
         eprintln!("Erro ao bloquear mutex: posicao_formiga");
         std::process::exit(1);
     }
+}
+
+fn encontrar_posicao_vazia(
+    posicao_atual: Ponto,
+    graos: &Vec<Grao>,
+    tamanho_mapa: (f64, f64),
+) -> Option<Ponto> {
+    let mut dist = 1.0;
+    let mut vizinhos: Vec<Ponto> = vec![];
+
+    // Função para verificar se uma posição está vazia
+    let posicao_vazia =
+        |p: &Ponto, graos: &Vec<Grao>| -> bool { !graos.iter().any(|g| g.posicao == *p) };
+
+    // Enquanto não encontramos uma posição vazia, aumentamos a distância de busca
+    loop {
+        vizinhos = gerar_vizinhos(posicao_atual, dist, tamanho_mapa);
+        for vizinho in &vizinhos {
+            if posicao_vazia(vizinho, graos) {
+                return Some(*vizinho);
+            }
+        }
+
+        // Se não encontramos, expandimos a distância de busca
+        dist += 1.0;
+
+        // Opcional: Limitar a busca para não ficar muito longe (para evitar loops infinitos)
+        if dist > 10.0 {
+            return None;
+        }
+    }
+}
+
+// Função para gerar vizinhos ao redor da posição atual dentro de uma distância específica
+fn gerar_vizinhos(posicao: Ponto, distancia: f64, tamanho_mapa: (f64, f64)) -> Vec<Ponto> {
+    let mut vizinhos = vec![];
+
+    // Gerar posições em torno da atual dentro de uma grade de (distancia x distancia)
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if dx != 0 || dy != 0 {
+                let novo_x = posicao.x + dx as f64 * distancia;
+                let novo_y = posicao.y + dy as f64 * distancia;
+
+                // Garantir que a nova posição está dentro dos limites do mapa
+                if novo_x >= 0.0
+                    && novo_x <= tamanho_mapa.0
+                    && novo_y >= 0.0
+                    && novo_y <= tamanho_mapa.1
+                {
+                    vizinhos.push(Ponto {
+                        x: novo_x,
+                        y: novo_y,
+                    });
+                }
+            }
+        }
+    }
+
+    vizinhos
 }
 
 fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
