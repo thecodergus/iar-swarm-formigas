@@ -3,12 +3,10 @@ use super::grao::{self, Grao};
 use super::outros::Ponto;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
-use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{GlGraphics, OpenGL};
-use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
-use piston::window::WindowSettings;
+use image::{ImageBuffer, Rgb};
+use imageproc::drawing::draw_filled_circle_mut;
 use rand::Rng;
 
 #[derive(Clone, Debug)]
@@ -45,11 +43,79 @@ impl Cenario {
                 if *contador_guard <= 0 {
                     // Gerar uma imagem final
                     println!("Fim do programa");
+                    match self.gerar_imagem(
+                        "/home/gus/Documentos/iar-swarm-formigas/Cenario.png",
+                        (800, 640),
+                    ) {
+                        Ok(_) => println!("Imagem gerada com sucesso!"),
+                        Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                    }
                     break;
                 } else {
-                    println!("Loop {}", contador_guard);
+                    if (1 / 4) * numero_interacoes == *contador_guard
+                        || (2 / 4) * numero_interacoes == *contador_guard
+                        || (3 / 4) * numero_interacoes == *contador_guard
+                    {
+                        println!("Loop {}", contador_guard);
+                        match self.gerar_imagem(
+                            "/home/gus/Documentos/iar-swarm-formigas/Cenario.png",
+                            (800, 640),
+                        ) {
+                            Ok(_) => println!("Imagem gerada com sucesso!"),
+                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    pub fn gerar_imagem(
+        &self,
+        path: &str,
+        image_dimensions: (u32, u32),
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let (img_width, img_height) = image_dimensions;
+
+        // Cria uma imagem com fundo preto
+        let mut img = ImageBuffer::from_pixel(img_width, img_height, Rgb([0u8, 0u8, 0u8]));
+
+        // Desenha os grãos
+        if let Ok(graos) = self.graos.lock() {
+            for grao in graos.iter() {
+                let x_px = (grao.posicao.x / self.dimensoes.0) * img_width as f64;
+                let y_px = (grao.posicao.y / self.dimensoes.1) * img_height as f64;
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x_px.round() as i32, y_px.round() as i32),
+                    3,
+                    Rgb([255u8, 255u8, 0u8]), // Amarelo para grãos
+                );
+            }
+        } else {
+            return Err("Falha ao adquirir o lock dos grãos.".into());
+        }
+
+        // Desenha as formigas
+        for formiga in self.formigas.iter() {
+            if let Ok(pos) = formiga.posicao.lock() {
+                let x_px = (pos.x / self.dimensoes.0) * img_width as f64;
+                let y_px = (pos.y / self.dimensoes.1) * img_height as f64;
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x_px.round() as i32, y_px.round() as i32),
+                    5,
+                    Rgb([255u8, 0u8, 0u8]), // Vermelho para formigas
+                );
+            } else {
+                return Err(format!("Falha ao adquirir o lock da formiga {}", formiga.id).into());
+            }
+        }
+
+        // Salva a imagem em um arquivo
+        match img.save(path) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Erro ao salvar a imagem: {}", e).into()),
         }
     }
 }

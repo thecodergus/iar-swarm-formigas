@@ -5,8 +5,6 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-piston = "1.0.0"
-piston2d-graphics = "0.44.0"
-pistoncore-glutin_window = "0.72.0"
-piston2d-opengl_graphics = "0.85.0"
+image = "0.24.4"
+imageproc = "0.23.0"
 uuid = { version = "1.9.1", features = ["v4"] }
