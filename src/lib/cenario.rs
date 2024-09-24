@@ -46,7 +46,7 @@ impl Cenario {
                     // Gerar uma imagem final
                     println!("Fim do programa");
                     match self.gerar_imagem(
-                        "/home/gus/Documentos/iar-swarm-formigas/Cenario.png",
+                        "/home/gus/Documentos/iar-swarm-formigas/Cenario-final.png",
                         (800, 640),
                     ) {
                         Ok(_) => println!("Imagem gerada com sucesso!"),
