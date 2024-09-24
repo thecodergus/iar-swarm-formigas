@@ -189,37 +189,44 @@ fn segurar_objeto(
     let mut rng = rand::thread_rng();
     let valor_aleatorio: f64 = rng.gen_range(0.0..=1.0);
 
-    // Manipulação de segurando_objeto
-    if let Ok(mut objeto_guard) = segurando_objeto.lock() {
-        if let Ok(p) = posicao_formiga.lock() {
+    // Bloqueando a posição da formiga
+    if let Ok(p) = posicao_formiga.lock() {
+        // Se a formiga já está segurando um objeto
+        if let Ok(mut objeto_guard) = segurando_objeto.lock() {
             if objeto_guard.is_some() {
-                // Largar item
+                // Tentativa de largar o objeto
                 if valor_aleatorio <= pode_largar(*p, graos_perto.clone()) {
                     if let Some(grao_atual) = objeto_guard.take() {
-                        // Adicionar o grão de volta à lista de grãos
-                        if let Ok(mut graos) = graos.lock() {
-                            graos.push(grao_atual);
+                        // Adiciona o grão de volta à lista de grãos
+                        if let Ok(mut graos_guard) = graos.lock() {
+                            graos_guard.push(grao_atual);
                         }
                     }
                 }
             } else {
-                // Pegar item
-                if valor_aleatorio <= pode_pegar(*p, graos_perto.clone()) {
-                    match graos_perto.first() {
-                        Some(o) => {
-                            *objeto_guard = Some(o.clone()); // Clonando o grão
-                            if let Ok(mut graos_guard) = graos.lock() {
-                                // Agora removemos o grão que foi pego da lista de grãos
-                                graos_guard.retain(|g| g.id != o.id);
-                            }
+                // Encontrar o grão mais próximo da posição da formiga
+                if let Some(grao_mais_proximo) = graos_perto.iter().min_by(|g1, g2| {
+                    let dist1 = distancia_euclidiana(&p, &g1.posicao);
+                    let dist2 = distancia_euclidiana(&p, &g2.posicao);
+                    dist1
+                        .partial_cmp(&dist2)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                }) {
+                    // Tentativa de pegar o grão mais próximo
+                    if valor_aleatorio <= pode_pegar(*p, graos_perto.clone()) {
+                        // Clona o grão mais próximo e o coloca em `segurando_objeto`
+                        *objeto_guard = Some(grao_mais_proximo.clone());
+
+                        // Remover o grão da lista de grãos disponíveis
+                        if let Ok(mut graos_guard) = graos.lock() {
+                            graos_guard.retain(|g| g.id != grao_mais_proximo.id);
                         }
-                        None => (),
                     }
                 }
             }
         }
     } else {
-        eprintln!("Erro ao bloquear mutex: segurando_objeto");
+        eprintln!("Erro ao bloquear mutex: posicao_formiga");
         std::process::exit(1);
     }
 }
