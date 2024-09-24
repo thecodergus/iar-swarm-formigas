@@ -101,6 +101,10 @@ impl Cenario {
         path: &str,
         image_dimensions: (u32, u32),
     ) -> Result<(), Box<dyn std::error::Error>> {
+        const VERMELHO: Rgb<u8> = Rgb([255u8, 0u8, 0u8]);
+        const AMARELO: Rgb<u8> = Rgb([255u8, 255u8, 0u8]);
+        const VERDE: Rgb<u8> = Rgb([0u8, 255u8, 0u8]);
+
         let (img_width, img_height) = image_dimensions;
 
         // Cria uma imagem com fundo preto
@@ -115,7 +119,7 @@ impl Cenario {
                     &mut img,
                     (x_px.round() as i32, y_px.round() as i32),
                     3,
-                    Rgb([255u8, 255u8, 0u8]), // Amarelo para grãos
+                    VERDE, // Amarelo para grãos
                 );
             }
         } else {
@@ -127,12 +131,24 @@ impl Cenario {
             if let Ok(pos) = formiga.posicao.lock() {
                 let x_px = (pos.x / self.dimensoes.0) * img_width as f64;
                 let y_px = (pos.y / self.dimensoes.1) * img_height as f64;
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x_px.round() as i32, y_px.round() as i32),
-                    5,
-                    Rgb([255u8, 0u8, 0u8]), // Vermelho para formigas
-                );
+
+                if let Ok(mao) = formiga.segurando_objeto.lock() {
+                    if mao.is_some() {
+                        draw_filled_circle_mut(
+                            &mut img,
+                            (x_px.round() as i32, y_px.round() as i32),
+                            5,
+                            AMARELO, // Vermelho para formigas
+                        );
+                    } else {
+                        draw_filled_circle_mut(
+                            &mut img,
+                            (x_px.round() as i32, y_px.round() as i32),
+                            5,
+                            VERMELHO, // Vermelho para formigas
+                        );
+                    }
+                }
             } else {
                 return Err(format!("Falha ao adquirir o lock da formiga {}", formiga.id).into());
             }
