@@ -13,7 +13,11 @@ pub struct Formiga {
     matar_thread: Arc<Mutex<bool>>,
 }
 
+// Parametros
 const VELOCIDADE: f64 = 1.0;
+const ALPHA: f64 = 30.0;
+const K1: f64 = 0.01;
+const K2: f64 = 0.015;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
@@ -312,7 +316,6 @@ fn gerar_vizinhos(posicao: Ponto, distancia: f64, tamanho_mapa: (f64, f64)) -> V
 
 fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
     // Hiperparametro
-    const ALPHA: f64 = 11.8;
 
     if itens.len() != 0 {
         (1.0 / (itens.len() as f64).powi(2))
@@ -326,13 +329,11 @@ fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
 }
 
 fn pode_pegar(p: Ponto, itens_proximos: Vec<Grao>) -> f64 {
-    const K1: f64 = 0.3;
     let fi: f64 = similaridade_entre_dado_vizinhanca(p, itens_proximos);
     (K1 / (K1 + fi)).powi(2)
 }
 
 fn pode_largar(p: Ponto, itens_proximos: Vec<Grao>) -> f64 {
-    const K2: f64 = 0.6;
     let fi: f64 = similaridade_entre_dado_vizinhanca(p, itens_proximos);
     (fi / (K2 + fi)).powi(2)
 }
