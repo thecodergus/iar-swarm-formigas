@@ -222,7 +222,7 @@ fn segurar_objeto(
 
 fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
     // Hiperparametro
-    const ALPHA: f64 = 11.8;
+    const ALPHA: f64 = 11.8029;
 
     if itens.len() != 0 {
         (1.0 / (itens.len() as f64).powi(2))

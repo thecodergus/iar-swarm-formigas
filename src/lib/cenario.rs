@@ -65,6 +65,7 @@ impl Cenario {
                             Ok(_) => println!("Imagem gerada com sucesso!"),
                             Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
                         }
+                        contador_img += 1;
                     }
                 }
             }
