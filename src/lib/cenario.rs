@@ -39,6 +39,10 @@ impl Cenario {
         }
 
         let mut contador_img: i64 = 0;
+        // Variáveis para rastrear se as imagens já foram geradas
+        let mut gerou_75_porcento = false;
+        let mut gerou_50_porcento = false;
+        let mut gerou_25_porcento = false;
 
         loop {
             if let Ok(contador_guard) = contador.lock() {
@@ -54,11 +58,10 @@ impl Cenario {
                     }
                     break;
                 } else {
-                    if (1 / 4) * numero_interacoes >= *contador_guard
-                        || (2 / 4) * numero_interacoes >= *contador_guard
-                        || (3 / 4) * numero_interacoes >= *contador_guard
-                    {
-                        println!("Loop {}", contador_guard);
+                    let percentual_restante = (*contador_guard as f64) / (numero_interacoes as f64);
+
+                    if !gerou_75_porcento && percentual_restante <= 0.75 {
+                        println!("Loop {} - 25% concluído", contador_guard);
                         match self
                             .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
                         {
@@ -66,6 +69,27 @@ impl Cenario {
                             Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
                         }
                         contador_img += 1;
+                        gerou_75_porcento = true;
+                    } else if !gerou_50_porcento && percentual_restante <= 0.50 {
+                        println!("Loop {} - 50% concluído", contador_guard);
+                        match self
+                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
+                        {
+                            Ok(_) => println!("Imagem gerada com sucesso!"),
+                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                        }
+                        contador_img += 1;
+                        gerou_50_porcento = true;
+                    } else if !gerou_25_porcento && percentual_restante <= 0.25 {
+                        println!("Loop {} - 75% concluído", contador_guard);
+                        match self
+                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
+                        {
+                            Ok(_) => println!("Imagem gerada com sucesso!"),
+                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                        }
+                        contador_img += 1;
+                        gerou_25_porcento = true;
                     }
                 }
             }
