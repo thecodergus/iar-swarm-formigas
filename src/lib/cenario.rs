@@ -57,10 +57,7 @@ impl Cenario {
                         || (3 / 4) * numero_interacoes == *contador_guard
                     {
                         println!("Loop {}", contador_guard);
-                        match self.gerar_imagem(
-                            "/home/gus/Documentos/iar-swarm-formigas/Cenario.png",
-                            (800, 640),
-                        ) {
+                        match self.gerar_imagem("Cenario.png", (800, 640)) {
                             Ok(_) => println!("Imagem gerada com sucesso!"),
                             Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
                         }
