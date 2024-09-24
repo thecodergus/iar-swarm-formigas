@@ -186,8 +186,6 @@ fn segurar_objeto(
     graos_perto: Vec<Grao>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
-    let num_celulas_ao_redor = 8;
-    let num_itens_ao_redor = graos_perto.len();
     let mut rng = rand::thread_rng();
     let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
 
@@ -204,16 +202,14 @@ fn segurar_objeto(
             } else {
                 // Pegar item
                 if valor_aletorio <= pode_pegar(*p, graos_perto.clone()) {
-                    if let Ok(mut segurando_objeto_guard) = segurando_objeto.lock() {
-                        match graos_perto.first() {
-                            Some(o) => {
-                                *segurando_objeto_guard = Some(*o);
-                                if let Ok(mut graos) = graos.lock() {
-                                    graos.retain(|g| g.id != o.id);
-                                }
+                    match graos_perto.first() {
+                        Some(o) => {
+                            *objeto_guard = Some(*o);
+                            if let Ok(mut graos) = graos.lock() {
+                                graos.retain(|g| g.id != o.id);
                             }
-                            None => (),
                         }
+                        None => (),
                     }
                 }
             }

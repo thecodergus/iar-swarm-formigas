@@ -47,7 +47,7 @@ impl Cenario {
                     println!("Fim do programa");
                     break;
                 } else {
-                    // println!("Loop {}", contador_guard);
+                    println!("Loop {}", contador_guard);
                 }
             }
         }
