@@ -7,7 +7,8 @@ use std::time::Duration;
 
 use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_filled_circle_mut;
-use rand::Rng;
+use imageproc::rect::Rect;
+use rand::Rng; // Necessário para desenhar retângulos
 
 #[derive(Clone, Debug)]
 pub struct Cenario {
@@ -107,20 +108,32 @@ impl Cenario {
 
         let (img_width, img_height) = image_dimensions;
 
+        // Definir a dimensão lógica (a "base" de 100x100)
+        let base_dimensions = (100.0, 100.0);
+
         // Cria uma imagem com fundo preto
         let mut img = ImageBuffer::from_pixel(img_width, img_height, Rgb([0u8, 0u8, 0u8]));
+
+        // Escalar o tamanho da imagem real em relação à base de 100x100
+        let scale_x = img_width as f64 / base_dimensions.0;
+        let scale_y = img_height as f64 / base_dimensions.1;
+
+        // Tamanho do lado dos quadrados (grãos e formigas) em pixels, agora reduzidos pela metade
+        let tamanho_grao = (1.0 * scale_x / 1.0).round() as i32; // Ajustar o tamanho para grãos
+        let tamanho_formiga = (1.0 * scale_x / 1.0).round() as i32; // Ajustar o tamanho para formigas
 
         // Desenha os grãos
         if let Ok(graos) = self.graos.lock() {
             for grao in graos.iter() {
-                let x_px = (grao.posicao.x / self.dimensoes.0) * img_width as f64;
-                let y_px = (grao.posicao.y / self.dimensoes.1) * img_height as f64;
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x_px.round() as i32, y_px.round() as i32),
-                    3,
-                    VERDE, // Amarelo para grãos
-                );
+                // Ajustar as coordenadas dos grãos para o tamanho da imagem
+                let x_px = ((grao.posicao.x / self.dimensoes.0) * base_dimensions.0 * scale_x)
+                    .round() as i32;
+                let y_px = ((grao.posicao.y / self.dimensoes.1) * base_dimensions.1 * scale_y)
+                    .round() as i32;
+
+                // Desenha o quadrado (retângulo) representando o grão, com tamanho reduzido
+                let rect = Rect::at(x_px, y_px).of_size(tamanho_grao as u32, tamanho_grao as u32);
+                imageproc::drawing::draw_filled_rect_mut(&mut img, rect, VERDE);
             }
         } else {
             return Err("Falha ao adquirir o lock dos grãos.".into());
@@ -129,25 +142,19 @@ impl Cenario {
         // Desenha as formigas
         for formiga in self.formigas.iter() {
             if let Ok(pos) = formiga.posicao.lock() {
-                let x_px = (pos.x / self.dimensoes.0) * img_width as f64;
-                let y_px = (pos.y / self.dimensoes.1) * img_height as f64;
+                // Ajustar as coordenadas das formigas para o tamanho da imagem
+                let x_px =
+                    ((pos.x / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
+                let y_px =
+                    ((pos.y / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
 
                 if let Ok(mao) = formiga.segurando_objeto.lock() {
-                    if mao.is_some() {
-                        draw_filled_circle_mut(
-                            &mut img,
-                            (x_px.round() as i32, y_px.round() as i32),
-                            5,
-                            AMARELO, // Vermelho para formigas
-                        );
-                    } else {
-                        draw_filled_circle_mut(
-                            &mut img,
-                            (x_px.round() as i32, y_px.round() as i32),
-                            5,
-                            VERMELHO, // Vermelho para formigas
-                        );
-                    }
+                    let cor_formiga = if mao.is_some() { AMARELO } else { VERMELHO };
+
+                    // Desenha o quadrado (retângulo) representando a formiga, com tamanho reduzido
+                    let rect = Rect::at(x_px, y_px)
+                        .of_size(tamanho_formiga as u32, tamanho_formiga as u32);
+                    imageproc::drawing::draw_filled_rect_mut(&mut img, rect, cor_formiga);
                 }
             } else {
                 return Err(format!("Falha ao adquirir o lock da formiga {}", formiga.id).into());
