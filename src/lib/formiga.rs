@@ -187,26 +187,30 @@ fn segurar_objeto(
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
     let mut rng = rand::thread_rng();
-    let valor_aletorio: f64 = rng.gen_range(0.0..=1.0);
+    let valor_aleatorio: f64 = rng.gen_range(0.0..=1.0);
 
     // Manipulação de segurando_objeto
     if let Ok(mut objeto_guard) = segurando_objeto.lock() {
         if let Ok(p) = posicao_formiga.lock() {
             if objeto_guard.is_some() {
                 // Largar item
-                if valor_aletorio <= pode_largar(*p, graos_perto.clone()) {
-                    if let Ok(mut graos) = graos.lock() {
-                        graos.push(Grao::new(*p));
+                if valor_aleatorio <= pode_largar(*p, graos_perto.clone()) {
+                    if let Some(grao_atual) = objeto_guard.take() {
+                        // Adicionar o grão de volta à lista de grãos
+                        if let Ok(mut graos) = graos.lock() {
+                            graos.push(grao_atual);
+                        }
                     }
                 }
             } else {
                 // Pegar item
-                if valor_aletorio <= pode_pegar(*p, graos_perto.clone()) {
+                if valor_aleatorio <= pode_pegar(*p, graos_perto.clone()) {
                     match graos_perto.first() {
                         Some(o) => {
-                            *objeto_guard = Some(*o);
-                            if let Ok(mut graos) = graos.lock() {
-                                graos.retain(|g| g.id != o.id);
+                            *objeto_guard = Some(o.clone()); // Clonando o grão
+                            if let Ok(mut graos_guard) = graos.lock() {
+                                // Agora removemos o grão que foi pego da lista de grãos
+                                graos_guard.retain(|g| g.id != o.id);
                             }
                         }
                         None => (),
@@ -222,7 +226,7 @@ fn segurar_objeto(
 
 fn similaridade_entre_dado_vizinhanca(p: Ponto, itens: Vec<Grao>) -> f64 {
     // Hiperparametro
-    const ALPHA: f64 = 11.8029;
+    const ALPHA: f64 = 11.8;
 
     if itens.len() != 0 {
         (1.0 / (itens.len() as f64).powi(2))
