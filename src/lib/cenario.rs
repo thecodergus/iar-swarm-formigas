@@ -44,6 +44,7 @@ impl Cenario {
         let mut gerou_75_porcento = false;
         let mut gerou_50_porcento = false;
         let mut gerou_25_porcento = false;
+        let mut gerou_0_porcento = false;
 
         loop {
             if let Ok(contador_guard) = contador.lock() {
@@ -91,7 +92,7 @@ impl Cenario {
                         }
                         contador_img += 1;
                         gerou_25_porcento = true;
-                    } else if !gerou_25_porcento && percentual_restante <= 0.0 {
+                    } else if !gerou_0_porcento && percentual_restante <= 1.0 {
                         println!("Loop {} - 0% concluído", contador_guard);
                         match self
                             .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
@@ -100,6 +101,7 @@ impl Cenario {
                             Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
                         }
                         contador_img += 1;
+                        gerou_0_porcento = true;
                     }
                 }
             }
