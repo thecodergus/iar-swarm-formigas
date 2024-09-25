@@ -91,6 +91,15 @@ impl Cenario {
                         }
                         contador_img += 1;
                         gerou_25_porcento = true;
+                    } else if !gerou_25_porcento && percentual_restante <= 0.0 {
+                        println!("Loop {} - 0% concluído", contador_guard);
+                        match self
+                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
+                        {
+                            Ok(_) => println!("Imagem gerada com sucesso!"),
+                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                        }
+                        contador_img += 1;
                     }
                 }
             }

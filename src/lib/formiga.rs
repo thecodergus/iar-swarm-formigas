@@ -15,7 +15,7 @@ pub struct Formiga {
 
 // Parametros
 const VELOCIDADE: f64 = 1.0;
-const ALPHA: f64 = 30.0;
+const ALPHA: f64 = 0.5;
 const K1: f64 = 0.01;
 const K2: f64 = 0.015;
 
