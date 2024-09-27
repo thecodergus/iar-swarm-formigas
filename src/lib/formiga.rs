@@ -165,10 +165,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
                 let distancia_total: f64 = (distancia_x.powi(2) + distancia_y.powi(2)).sqrt();
 
                 // Verifica se o grão está dentro da vizinhança e não está na mesma posição exata
-                if distancia_x <= TAMANHO_VIZINHANCA
-                    && distancia_y <= TAMANHO_VIZINHANCA
-                    && *posicao_guard != grao.posicao
-                {
+                if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
                     // Verifica se este grão é o mais próximo
                     if distancia_total < distancia_minima {
                         // Se for o mais próximo até agora, atualiza o mais próximo
