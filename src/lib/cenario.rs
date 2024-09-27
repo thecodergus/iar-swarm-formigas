@@ -137,10 +137,12 @@ impl Cenario {
         if let Ok(graos) = self.graos.lock() {
             for grao in graos.iter() {
                 // Ajustar as coordenadas dos grãos para o tamanho da imagem
-                let x_px = ((grao.posicao.x / self.dimensoes.0) * base_dimensions.0 * scale_x)
-                    .round() as i32;
-                let y_px = ((grao.posicao.y / self.dimensoes.1) * base_dimensions.1 * scale_y)
-                    .round() as i32;
+                let x_px =
+                    ((grao.posicao.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x)
+                        .round() as i32;
+                let y_px =
+                    ((grao.posicao.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y)
+                        .round() as i32;
 
                 // Desenha o quadrado (retângulo) representando o grão, com tamanho reduzido
                 let rect = Rect::at(x_px, y_px).of_size(tamanho_grao as u32, tamanho_grao as u32);
@@ -154,10 +156,10 @@ impl Cenario {
         for formiga in self.formigas.iter() {
             if let Ok(pos) = formiga.posicao.lock() {
                 // Ajustar as coordenadas das formigas para o tamanho da imagem
-                let x_px =
-                    ((pos.x / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
-                let y_px =
-                    ((pos.y / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
+                let x_px = ((pos.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round()
+                    as i32;
+                let y_px = ((pos.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round()
+                    as i32;
 
                 if let Ok(mao) = formiga.segurando_objeto.lock() {
                     let cor_formiga = if mao.is_some() { AMARELO } else { VERMELHO };

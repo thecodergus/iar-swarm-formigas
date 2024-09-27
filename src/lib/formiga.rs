@@ -93,18 +93,18 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
         let mut nova_posicao = match num_aleatorio {
             1 => Ponto {
                 x: posicao_guard.x,
-                y: posicao_guard.y + (1.0 * VELOCIDADE),
+                y: posicao_guard.y + (1.0 * VELOCIDADE) as i32,
             },
             2 => Ponto {
-                x: posicao_guard.x + (1.0 * VELOCIDADE),
+                x: posicao_guard.x + (1.0 * VELOCIDADE) as i32,
                 y: posicao_guard.y,
             },
             3 => Ponto {
                 x: posicao_guard.x,
-                y: posicao_guard.y - (1.0 * VELOCIDADE),
+                y: posicao_guard.y - (1.0 * VELOCIDADE) as i32,
             },
             4 => Ponto {
-                x: posicao_guard.x - (1.0 * VELOCIDADE),
+                x: posicao_guard.x - (1.0 * VELOCIDADE) as i32,
                 y: posicao_guard.y,
             },
             _ => Ponto {
@@ -114,16 +114,16 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
         };
 
         // Verificação dos limites do mapa
-        if nova_posicao.x < 0.0 {
-            nova_posicao.x = 0.0;
-        } else if nova_posicao.x > tamanho_mapa.0 {
-            nova_posicao.x = tamanho_mapa.0;
+        if nova_posicao.x < 0 {
+            nova_posicao.x = 0;
+        } else if nova_posicao.x > tamanho_mapa.0 as i32 {
+            nova_posicao.x = tamanho_mapa.0 as i32;
         }
 
-        if nova_posicao.y < 0.0 {
-            nova_posicao.y = 0.0;
-        } else if nova_posicao.y > tamanho_mapa.1 {
-            nova_posicao.y = tamanho_mapa.1;
+        if nova_posicao.y < 0 {
+            nova_posicao.y = 0;
+        } else if nova_posicao.y > tamanho_mapa.1 as i32 {
+            nova_posicao.y = tamanho_mapa.1 as i32;
         }
 
         nova_posicao
@@ -141,10 +141,7 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
     for _ in 0..numero {
         let x: i32 = rng.gen_range(0..=tamanho_mapa.0 as i32);
         let y: i32 = rng.gen_range(0..=tamanho_mapa.1 as i32);
-        formigas.push(Formiga::new(Ponto {
-            x: x as f64,
-            y: y as f64,
-        }));
+        formigas.push(Formiga::new(Ponto { x: x, y: y }));
     }
 
     formigas
@@ -161,8 +158,8 @@ fn encontrar_graos_vizinhanca(
         // Trava o mutex para acessar a lista de grãos
         if let Ok(graos_guard) = graos.lock() {
             for grao in graos_guard.iter() {
-                let distancia_x: f64 = (grao.posicao.x - posicao_guard.x).abs();
-                let distancia_y: f64 = (grao.posicao.y - posicao_guard.y).abs();
+                let distancia_x: f64 = (grao.posicao.x as f64 - posicao_guard.x as f64).abs();
+                let distancia_y: f64 = (grao.posicao.y as f64 - posicao_guard.y as f64).abs();
 
                 // Se o grão está dentro da vizinhança 3x3 (distância <= 1.0 em x e y)
                 if distancia_x <= TAMANHO_VIZINHANCA

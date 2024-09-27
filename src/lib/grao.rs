@@ -29,13 +29,7 @@ pub fn gerar_graos(numero: i32, tamanho_mapa: (f64, f64), dados: Vec<f64>) -> Ve
     for _ in 0..numero {
         let x: i32 = rng.gen_range(0..=(tamanho_mapa.0 as i32));
         let y: i32 = rng.gen_range(0..=tamanho_mapa.1 as i32);
-        graos.push(Grao::new(
-            Ponto {
-                x: x as f64,
-                y: y as f64,
-            },
-            dados.clone(),
-        ));
+        graos.push(Grao::new(Ponto { x: x, y: y }, dados.clone()));
     }
 
     graos
