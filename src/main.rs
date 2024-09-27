@@ -14,7 +14,7 @@ fn main() {
     let mut cenario: Cenario = Cenario::new(
         tamanho,
         gerar_formigas(quantidade_formigas, tamanho_mapa),
-        gerar_graos(quantidade_graos, tamanho_mapa),
+        gerar_graos(quantidade_graos, tamanho_mapa, vec![]),
     );
     cenario.start(2_000_000)
 }
