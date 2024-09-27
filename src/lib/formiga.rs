@@ -40,9 +40,7 @@ impl Formiga {
         let segurando_objeto: Arc<Mutex<Option<Grao>>> = Arc::clone(&self.segurando_objeto);
         let matar_thread: Arc<Mutex<bool>> = Arc::clone(&self.matar_thread);
 
-        let thread: thread::JoinHandle<()> = thread::spawn(move || {
-            let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
-
+        let _: thread::JoinHandle<()> = thread::spawn(move || {
             loop {
                 // Verificação de matar_thread antes de continuar o loop
                 if let Ok(matar) = matar_thread.lock() {
