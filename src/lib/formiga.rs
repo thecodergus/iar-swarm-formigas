@@ -141,9 +141,12 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
     let mut formigas: Vec<Formiga> = vec![];
 
     for _ in 0..numero {
-        let x: f64 = rng.gen_range(0.0..=tamanho_mapa.0);
-        let y: f64 = rng.gen_range(0.0..=tamanho_mapa.1);
-        formigas.push(Formiga::new(Ponto { x, y }));
+        let x: i32 = rng.gen_range(0..=tamanho_mapa.0 as i32);
+        let y: i32 = rng.gen_range(0..=tamanho_mapa.1 as i32);
+        formigas.push(Formiga::new(Ponto {
+            x: x as f64,
+            y: y as f64,
+        }));
     }
 
     formigas

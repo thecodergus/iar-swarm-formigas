@@ -14,7 +14,10 @@ fn main() {
     let mut cenario: Cenario = Cenario::new(
         tamanho,
         gerar_formigas(quantidade_formigas, tamanho_mapa),
-        gerar_graos(quantidade_graos, tamanho_mapa, vec![]),
+        gerar_graos(quantidade_graos / 2, tamanho_mapa, vec![2.0, 3.0])
+            .into_iter()
+            .chain(gerar_graos(quantidade_graos / 2, tamanho_mapa, vec![5.0, 7.0]).into_iter())
+            .collect::<Vec<_>>(),
     );
     cenario.start(2_000_000)
 }
