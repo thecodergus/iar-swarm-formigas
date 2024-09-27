@@ -210,15 +210,16 @@ fn acao_segurar_objeto(
         );
 
         // Se a formiga já estiver carregando algum grão
-        if let Some(grao_carregado) = &*objeto_guard {
+        if let Some(grao_carregado) = &mut *objeto_guard {
             if ha_grao_na_posicao_formiga(Arc::clone(&posicao_formiga), Arc::clone(&graos)) {
                 // Largar (caso queira largar o objeto em uma posição vazia)
-                if probabilidade <= pode_largar(&grao_carregado, &graos_restantes) {
+                if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
                     // Adiciona o grão na lista de grãos novamente
-                    adicionar_grao(grao_carregado, graos);
-
-                    // Limpa a mão da formiga
-                    *objeto_guard = None;
+                    if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
+                        grao_carregado.posicao = posicao_formiga_guard.clone();
+                        adicionar_grao(grao_carregado, graos); // Passa referência ao grão
+                        *objeto_guard = None; // Limpa a mão da formiga
+                    }
                 }
             }
         } else {
