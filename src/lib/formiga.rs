@@ -1,6 +1,6 @@
 use super::grao::{self, Grao};
-use super::outros::{distancia_euclidiana, Ponto};
-use rand::Rng;
+use super::outros::Ponto;
+use rand::{thread_rng, Rng};
 use std::sync::{Arc, Mutex};
 use std::{thread, vec};
 use uuid::Uuid;
@@ -207,15 +207,68 @@ fn acao_segurar_objeto(
     objeto: Arc<Mutex<Option<Grao>>>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
+    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    let probabilidade: f64 = rng.gen_range(0.0..=1.0);
+
     if let Ok(objeto_guard) = objeto.lock() {
         let graos_perto: Vec<Grao> =
             encontrar_graos_vizinhanca(Arc::clone(&posicao_formiga), Arc::clone(&graos));
         if objeto_guard.is_some() {
+            // Largar
         } else {
             let grao_na_posicao: Option<Grao> =
                 encontrar_grao_local(Arc::clone(&posicao_formiga), Arc::clone(&graos));
 
-            if grao_na_posicao.is_some() {}
+            if grao_na_posicao.is_some() {
+                // Pegar
+            }
         }
+    }
+}
+
+fn distancia_euclidiana_adaptada(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
+    assert_eq!(a.len(), b.len(), "Os vetores devem ter o mesmo tamanho.");
+
+    return a
+        .iter()
+        .zip(b.iter())
+        .map(|(a_i, b_i)| (a_i - b_i).powi(2))
+        .sum::<f64>()
+        .sqrt();
+}
+
+fn similaridade(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    if graos_perto.len() == 0 {
+        return 0.0;
+    } else {
+        return (1.0 / (graos_perto.len() as f64).powi(2))
+            * graos_perto
+                .iter()
+                .map(|grao_aux| {
+                    1.0 - (distancia_euclidiana_adaptada(&grao.dados, &grao_aux.dados)) / ALPHA
+                })
+                .sum::<f64>();
+    }
+}
+
+fn pode_pegar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    (K1 / (K1 + similaridade(grao, graos_perto))).powi(2)
+}
+
+fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    let similidarida_result: f64 = similaridade(grao, graos_perto);
+
+    (similidarida_result / (K2 + similidarida_result)).powi(2)
+}
+
+fn remover_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
+    if let Ok(mut graos_guard) = graos.lock() {
+        graos_guard.retain(|g_| g != g_);
+    }
+}
+
+fn adicionar_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
+    if let Ok(mut graos_guard) = graos.lock() {
+        graos_guard.push(g.clone());
     }
 }

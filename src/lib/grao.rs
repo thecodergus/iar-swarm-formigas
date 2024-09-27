@@ -4,7 +4,7 @@ use super::outros::Ponto;
 use rand::Rng;
 use uuid::Uuid;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Grao {
     pub id: Uuid,
     pub posicao: Ponto,
