@@ -207,12 +207,14 @@ fn acao_segurar_objeto(
     // Tenta adquirir o lock no objeto e trabalhar com ele
     if let Ok(mut objeto_guard) = objeto.lock() {
         // Chamando a função e desestruturando o retorno em duas variáveis
-        let (grao_mais_proximo, graos_restantes) =
-            encontrar_grao_mais_proximo_vizinhanca(posicao_formiga, Arc::clone(&graos));
+        let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
+            Arc::clone(&posicao_formiga),
+            Arc::clone(&graos),
+        );
 
         // Se a formiga já estiver carregando algum grão
         if let Some(grao_carregado) = &*objeto_guard {
-            if grao_mais_proximo.is_none() {
+            if ha_grao_na_posicao_formiga(Arc::clone(&posicao_formiga), Arc::clone(&graos)) {
                 // Largar (caso queira largar o objeto em uma posição vazia)
                 if probabilidade <= pode_largar(&grao_carregado, &graos_restantes) {
                     // Adiciona o grão na lista de grãos novamente
@@ -335,4 +337,30 @@ fn adicionar_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
         // Adiciona o grão clonado de volta ao vetor de grãos
         graos_guard.push(g.clone());
     }
+}
+
+fn ha_grao_na_posicao_formiga(
+    posicao_formiga: Arc<Mutex<Ponto>>,
+    graos: Arc<Mutex<Vec<Grao>>>,
+) -> bool {
+    // Trava o mutex para acessar a posição da formiga
+    if let Ok(posicao_guard) = posicao_formiga.lock() {
+        // Trava o mutex para acessar a lista de grãos
+        if let Ok(graos_guard) = graos.lock() {
+            // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
+            for grao in graos_guard.iter() {
+                if grao.posicao == *posicao_guard {
+                    return true; // Retorna true se encontrar um grão na mesma posição
+                }
+            }
+        } else {
+            eprintln!("Erro ao tentar adquirir o lock do Mutex de graos");
+            std::process::exit(1);
+        }
+    } else {
+        eprintln!("Erro ao tentar adquirir o lock do Mutex de posicao_formiga");
+        std::process::exit(1);
+    }
+
+    false // Retorna false se nenhum grão for encontrado
 }
