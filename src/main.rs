@@ -19,5 +19,5 @@ fn main() {
             .chain(gerar_graos(quantidade_graos / 2, tamanho_mapa, vec![5.0, 7.0]).into_iter())
             .collect::<Vec<_>>(),
     );
-    cenario.start(12_000_000)
+    cenario.start(2_000_000)
 }
