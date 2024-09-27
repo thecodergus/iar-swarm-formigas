@@ -151,7 +151,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
     posicao: Arc<Mutex<Ponto>>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) -> (Option<Grao>, Vec<Grao>) {
-    let mut grãos_na_vizinhanca: Vec<Grao> = vec![];
+    let mut graos_na_vizinhanca: Vec<Grao> = vec![];
     let mut grao_mais_proximo: Option<Grao> = None;
     let mut distancia_minima: f64 = f64::MAX;
 
@@ -174,13 +174,13 @@ fn encontrar_grao_mais_proximo_vizinhanca(
                         // Se for o mais próximo até agora, atualiza o mais próximo
                         if let Some(grao_atual) = grao_mais_proximo.take() {
                             // Adiciona o antigo grão mais próximo ao vetor de grãos
-                            grãos_na_vizinhanca.push(grao_atual);
+                            graos_na_vizinhanca.push(grao_atual);
                         }
                         grao_mais_proximo = Some(grao.clone());
                         distancia_minima = distancia_total;
                     } else {
                         // Caso contrário, adiciona à lista de grãos na vizinhança
-                        grãos_na_vizinhanca.push(grao.clone());
+                        graos_na_vizinhanca.push(grao.clone());
                     }
                 }
             }
@@ -193,7 +193,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
         std::process::exit(1);
     }
 
-    (grao_mais_proximo, grãos_na_vizinhanca)
+    (grao_mais_proximo, graos_na_vizinhanca)
 }
 
 fn acao_segurar_objeto(
