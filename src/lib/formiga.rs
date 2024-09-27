@@ -210,17 +210,36 @@ fn acao_segurar_objeto(
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
     let probabilidade: f64 = rng.gen_range(0.0..=1.0);
 
-    if let Ok(objeto_guard) = objeto.lock() {
+    // Tenta adquirir o lock no objeto e trabalhar com ele
+    if let Ok(mut objeto_guard) = objeto.lock() {
         let graos_perto: Vec<Grao> =
             encontrar_graos_vizinhanca(Arc::clone(&posicao_formiga), Arc::clone(&graos));
-        if objeto_guard.is_some() {
-            // Largar
-        } else {
-            let grao_na_posicao: Option<Grao> =
-                encontrar_grao_local(Arc::clone(&posicao_formiga), Arc::clone(&graos));
+        let grao_na_posicao: Option<Grao> =
+            encontrar_grao_local(Arc::clone(&posicao_formiga), Arc::clone(&graos));
 
-            if grao_na_posicao.is_some() {
-                // Pegar
+        // Se a formiga já estiver carregando algum grão
+        if let Some(grao_carregado) = &*objeto_guard {
+            if grao_na_posicao.is_none() {
+                // Largar (caso queira largar o objeto em uma posição vazia)
+                if probabilidade <= pode_largar(&grao_carregado, &graos_perto) {
+                    // Adiciona o grão na lista de grãos novamente
+                    adicionar_grao(grao_carregado, graos);
+
+                    // Limpa a mão da formiga
+                    *objeto_guard = None;
+                }
+            }
+        } else {
+            // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
+            if let Some(grao) = &grao_na_posicao {
+                // Probabilidade de pegar o grão
+                if probabilidade <= pode_pegar(grao, &graos_perto) {
+                    // Adicionar o grão à mão da formiga
+                    objeto_guard.replace(grao.clone());
+
+                    // Remover o grão do vetor de grãos
+                    remover_grao(grao, graos);
+                }
             }
         }
     }
@@ -263,7 +282,7 @@ fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
 
 fn remover_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
     if let Ok(mut graos_guard) = graos.lock() {
-        graos_guard.retain(|g_| g != g_);
+        graos_guard.retain(|g_| g.id != g_.id);
     }
 }
 
