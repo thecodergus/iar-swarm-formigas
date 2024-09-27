@@ -135,6 +135,7 @@ impl Cenario {
 
         // Desenha os grãos
         if let Ok(graos) = self.graos.lock() {
+            println!("Numero de grãos: {}", graos.len());
             for grao in graos.iter() {
                 // Ajustar as coordenadas dos grãos para o tamanho da imagem
                 let x_px =
