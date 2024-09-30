@@ -27,7 +27,7 @@ impl Cenario {
         // Inicializa o mapa de cores para os grupos de grãos
         for grao in &graos {
             cores_por_grupo
-                .entry(format!("{:?}", grao.dados))
+                .entry(format!("{:?}", grao.dados.first().unwrap()))
                 .or_insert_with(|| gerar_cor_aleatoria());
         }
 
@@ -150,7 +150,7 @@ impl Cenario {
                 // Verifica se já existe uma cor associada ao grupo de dados desse grão
                 let cor = self
                     .cores_por_grupo
-                    .get(&format!("{:?}", grao.dados))
+                    .get(&format!("{:?}", grao.dados.first().unwrap()))
                     .expect("Cor não encontrada para o grupo de grãos");
 
                 // Ajustar as coordenadas dos grãos para o tamanho da imagem
