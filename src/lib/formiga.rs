@@ -16,9 +16,9 @@ pub struct Formiga {
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
 const VELOCIDADE: f64 = 1.0;
-const ALPHA: f64 = 11.8029;
-const K1: f64 = 0.3;
-const K2: f64 = 0.6;
+const ALPHA: f64 = 15.0;
+const K1: f64 = 0.5;
+const K2: f64 = 0.3;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
@@ -149,7 +149,7 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
 
 fn encontrar_grao_mais_proximo_vizinhanca(
     posicao: Arc<Mutex<Ponto>>,
-    graos: Arc<Mutex<Vec<Grao>>>,
+    graos_guard: &Vec<Grao>,
 ) -> (Option<Grao>, Vec<Grao>) {
     let mut graos_na_vizinhanca: Vec<Grao> = vec![];
     let mut grao_mais_proximo: Option<Grao> = None;
@@ -158,7 +158,6 @@ fn encontrar_grao_mais_proximo_vizinhanca(
     // Trava o mutex para acessar a posição da formiga
     if let Ok(posicao_guard) = posicao.lock() {
         // Trava o mutex para acessar a lista de grãos
-        if let Ok(graos_guard) = graos.lock() {
             for grao in graos_guard.iter() {
                 let distancia_x: f64 = (grao.posicao.x as f64 - posicao_guard.x as f64).abs();
                 let distancia_y: f64 = (grao.posicao.y as f64 - posicao_guard.y as f64).abs();
@@ -181,10 +180,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
                     }
                 }
             }
-        } else {
-            eprintln!("Erro ao tentar adquirir o lock do Mutex de graos");
-            std::process::exit(1);
-        }
+
     } else {
         eprintln!("Erro ao tentar adquirir o lock do Mutex de posicao_formiga");
         std::process::exit(1);
@@ -203,35 +199,37 @@ fn acao_segurar_objeto(
 
     // Tenta adquirir o lock no objeto e trabalhar com ele
     if let Ok(mut objeto_guard) = objeto.lock() {
-        // Chamando a função e desestruturando o retorno em duas variáveis
-        let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
-            Arc::clone(&posicao_formiga),
-            Arc::clone(&graos),
-        );
+        if let Ok(mut graos_guard) = graos.lock() {
+            // Chamando a função e desestruturando o retorno em duas variáveis
+            let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
+                Arc::clone(&posicao_formiga),
+                &graos_guard,
+            );
 
-        // Se a formiga já estiver carregando algum grão
-        if let Some(grao_carregado) = &mut *objeto_guard {
-            if !ha_grao_na_posicao_formiga(Arc::clone(&posicao_formiga), Arc::clone(&graos)) {
-                // Largar (caso queira largar o objeto em uma posição vazia)
-                if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
-                    // Adiciona o grão na lista de grãos novamente
-                    if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
-                        grao_carregado.posicao = posicao_formiga_guard.clone();
-                        adicionar_grao(grao_carregado, graos); // Passa referência ao grão
-                        *objeto_guard = None; // Limpa a mão da formiga
+            // Se a formiga já estiver carregando algum grão
+            if let Some(grao_carregado) = &mut *objeto_guard {
+                if !ha_grao_na_posicao_formiga(Arc::clone(&posicao_formiga), &graos_guard) {
+                    // Largar (caso queira largar o objeto em uma posição vazia)
+                    if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
+                        // Adiciona o grão na lista de grãos novamente
+                        if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
+                            grao_carregado.posicao = posicao_formiga_guard.clone();
+                            adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
+                            *objeto_guard = None; // Limpa a mão da formiga
+                        }
                     }
                 }
-            }
-        } else {
-            // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
-            if let Some(grao) = &grao_mais_proximo {
-                // Probabilidade de pegar o grão
-                if probabilidade <= pode_pegar(grao, &graos_restantes) {
-                    // Adicionar o grão à mão da formiga
-                    objeto_guard.replace(grao.clone());
+            } else {
+                // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
+                if let Some(grao) = &grao_mais_proximo {
+                    // Probabilidade de pegar o grão
+                    if probabilidade <= pode_pegar(grao, &graos_restantes) {
+                        // Adicionar o grão à mão da formiga
+                        objeto_guard.replace(grao.clone());
 
-                    // Remover o grão do vetor de grãos
-                    remover_grao(grao, graos);
+                        // Remover o grão do vetor de grãos
+                        remover_grao(grao, &mut graos_guard);
+                    }
                 }
             }
         }
@@ -319,46 +317,94 @@ fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
 // removendo o grão que foi retirado pela formiga. Esta função garante que a remoção ocorra de forma
 // segura usando mecanismos de concorrência como Arc<Mutex> para garantir que outros processos não
 // acessem os dados simultaneamente.
-fn remover_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
-    if let Ok(mut graos_guard) = graos.lock() {
+fn remover_grao(g: &Grao, graos: &mut Vec<Grao>) {
+    
         // Filtra o vetor de grãos para manter apenas os grãos cujo ID seja diferente do grão removido
-        graos_guard.retain(|g_| g.id != g_.id);
-    }
+        graos.retain(|g_| g.id != g_.id);
+    
 }
 
 // Função que adiciona um grão à lista de grãos
 // Quando a formiga decide largar um grão, o grão deve ser inserido novamente no ambiente.
 // Essa função adiciona o grão ao vetor de grãos de forma segura, garantindo que a inserção seja
 // feita de maneira concorrente, evitando problemas de race conditions usando Arc<Mutex>.
-fn adicionar_grao(g: &Grao, graos: Arc<Mutex<Vec<Grao>>>) {
-    if let Ok(mut graos_guard) = graos.lock() {
-        // Adiciona o grão clonado de volta ao vetor de grãos
-        graos_guard.push(g.clone());
-    }
+fn adicionar_grao(g: &Grao, graos: &mut Vec<Grao>) {
+    graos.push(g.clone());
 }
 
 fn ha_grao_na_posicao_formiga(
     posicao_formiga: Arc<Mutex<Ponto>>,
-    graos: Arc<Mutex<Vec<Grao>>>,
+    graos_guard: &Vec<Grao>,
 ) -> bool {
     // Trava o mutex para acessar a posição da formiga
     if let Ok(posicao_guard) = posicao_formiga.lock() {
         // Trava o mutex para acessar a lista de grãos
-        if let Ok(graos_guard) = graos.lock() {
             // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
             for grao in graos_guard.iter() {
                 if grao.posicao == *posicao_guard {
                     return true; // Retorna true se encontrar um grão na mesma posição
                 }
             }
-        } else {
-            eprintln!("Erro ao tentar adquirir o lock do Mutex de graos");
-            std::process::exit(1);
-        }
     } else {
         eprintln!("Erro ao tentar adquirir o lock do Mutex de posicao_formiga");
         std::process::exit(1);
     }
 
     false // Retorna false se nenhum grão for encontrado
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_distancia_vetores_iguais() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let result = distancia_euclidiana_adaptada(&a, &b);
+        assert_eq!(result, 0.0, "A distância entre vetores idênticos deve ser 0.");
+    }
+
+    #[test]
+    fn test_distancia_vetores_simples() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![4.0, 5.0, 6.0];
+        let result = distancia_euclidiana_adaptada(&a, &b);
+        let expected = ((1.0 - 4.0 as f64).powi(2) + (2.0 - 5.0 as f64).powi(2) + (3.0 - 6.0 as f64).powi(2)).sqrt();
+        assert_eq!(result, expected, "A distância deve ser calculada corretamente.");
+    }
+
+    #[test]
+    fn test_distancia_vetores_com_pontos_flutuantes() {
+        let a: Vec<f64> = vec![1.1, 2.2, 3.3];
+        let b: Vec<f64> = vec![4.4, 5.5, 6.6];
+        let result: f64 = distancia_euclidiana_adaptada(&a, &b);
+        let expected = ((1.1 - 4.4 as f64).powi(2) + (2.2 - 5.5 as f64).powi(2) + (3.3 - 6.6 as f64).powi(2)).sqrt();
+        assert!((result - expected).abs() < f64::EPSILON, "A distância deve ser precisa para valores em ponto flutuante.");
+    }
+
+    #[test]
+    fn test_distancia_vetores_com_zeros() {
+        let a = vec![0.0, 0.0, 0.0];
+        let b = vec![0.0, 0.0, 0.0];
+        let result = distancia_euclidiana_adaptada(&a, &b);
+        assert_eq!(result, 0.0, "A distância entre dois vetores de zeros deve ser 0.");
+    }
+
+    #[test]
+    fn test_distancia_vetores_negativos() {
+        let a = vec![-1.0, -2.0, -3.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let result = distancia_euclidiana_adaptada(&a, &b);
+        let expected: f64 = ((-1.0 - 1.0 as f64).powi(2) + (-2.0 - 2.0 as f64).powi(2) + (-3.0 - 3.0 as f64).powi(2)).sqrt();
+        assert_eq!(result, expected, "A distância deve ser calculada corretamente para valores negativos.");
+    }
+
+    #[test]
+    #[should_panic(expected = "Os vetores devem ter o mesmo tamanho.")]
+    fn test_distancia_vetores_tamanho_diferente() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0, 2.0, 3.0];
+        distancia_euclidiana_adaptada(&a, &b); // Deve entrar em panic porque os tamanhos são diferentes.
+    }
 }
