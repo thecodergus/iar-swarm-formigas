@@ -16,9 +16,9 @@ pub struct Formiga {
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
 const VELOCIDADE: f64 = 1.0;
-const ALPHA: f64 = 15.0;
-const K1: f64 = 0.5;
-const K2: f64 = 0.3;
+const ALPHA: f64 = 10.0;
+const K1: f64 = 0.2;
+const K2: f64 = 0.6;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
@@ -200,39 +200,41 @@ fn acao_segurar_objeto(
     // Tenta adquirir o lock no objeto e trabalhar com ele
     if let Ok(mut objeto_guard) = objeto.lock() {
         if let Ok(mut graos_guard) = graos.lock() {
-            // Chamando a função e desestruturando o retorno em duas variáveis
-            let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
-                Arc::clone(&posicao_formiga),
-                &graos_guard,
-            );
+            if let Ok(posicao_guard) = posicao_formiga.lock(){
+                // Chamando a função e desestruturando o retorno em duas variáveis
+                let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
+                    Arc::clone(&posicao_formiga),
+                    &graos_guard,
+                );
 
-            // Se a formiga já estiver carregando algum grão
-            if let Some(grao_carregado) = &mut *objeto_guard {
-                if !ha_grao_na_posicao_formiga(Arc::clone(&posicao_formiga), &graos_guard) {
-                    // Largar (caso queira largar o objeto em uma posição vazia)
-                    if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
-                        // Adiciona o grão na lista de grãos novamente
-                        if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
-                            grao_carregado.posicao = posicao_formiga_guard.clone();
-                            adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
-                            *objeto_guard = None; // Limpa a mão da formiga
+                // Se a formiga já estiver carregando algum grão
+                if let Some(grao_carregado) = &mut *objeto_guard {
+                    if !ha_grao_na_posicao_formiga(&posicao_guard, &graos_guard) {
+                        // Largar (caso queira largar o objeto em uma posição vazia)
+                        if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
+                            // Adiciona o grão na lista de grãos novamente
+                            if let Ok(posicao_formiga_guard) = posicao_formiga.lock() {
+                                grao_carregado.posicao = posicao_formiga_guard.clone();
+                                adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
+                                *objeto_guard = None; // Limpa a mão da formiga
+                            }
+                        }
+                    }
+                } else {
+                    // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
+                    if let Some(grao) = &grao_mais_proximo {
+                        // Probabilidade de pegar o grão
+                        if probabilidade <= pode_pegar(grao, &graos_restantes) {
+                            // Adicionar o grão à mão da formiga
+                            objeto_guard.replace(grao.clone());
+
+                            // Remover o grão do vetor de grãos
+                            remover_grao(grao, &mut graos_guard);
                         }
                     }
                 }
-            } else {
-                // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
-                if let Some(grao) = &grao_mais_proximo {
-                    // Probabilidade de pegar o grão
-                    if probabilidade <= pode_pegar(grao, &graos_restantes) {
-                        // Adicionar o grão à mão da formiga
-                        objeto_guard.replace(grao.clone());
-
-                        // Remover o grão do vetor de grãos
-                        remover_grao(grao, &mut graos_guard);
-                    }
-                }
-            }
         }
+    }
     }
 }
 
@@ -333,22 +335,17 @@ fn adicionar_grao(g: &Grao, graos: &mut Vec<Grao>) {
 }
 
 fn ha_grao_na_posicao_formiga(
-    posicao_formiga: Arc<Mutex<Ponto>>,
+    posicao_formiga: &Ponto,
     graos_guard: &Vec<Grao>,
 ) -> bool {
     // Trava o mutex para acessar a posição da formiga
-    if let Ok(posicao_guard) = posicao_formiga.lock() {
         // Trava o mutex para acessar a lista de grãos
             // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
             for grao in graos_guard.iter() {
-                if grao.posicao == *posicao_guard {
+                if grao.posicao == *posicao_formiga {
                     return true; // Retorna true se encontrar um grão na mesma posição
                 }
             }
-    } else {
-        eprintln!("Erro ao tentar adquirir o lock do Mutex de posicao_formiga");
-        std::process::exit(1);
-    }
 
     false // Retorna false se nenhum grão for encontrado
 }
