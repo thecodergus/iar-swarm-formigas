@@ -40,10 +40,10 @@ impl Cenario {
     }
 
     pub fn start(&mut self, numero_interacoes: i64) {
-        // Iniciar Variaveis
-        let contador: Arc<Mutex<i64>> = Arc::new(Mutex::new(numero_interacoes));
+        // Inicializa o contador compartilhado
+        let contador = Arc::new(Mutex::new(numero_interacoes));
 
-        // Iniciar Spawn de formigas
+        // Inicia as threads das formigas
         for formiga in &mut self.formigas {
             formiga.start(
                 self.dimensoes.clone(),
@@ -52,70 +52,56 @@ impl Cenario {
             );
         }
 
-        let mut contador_img: i64 = 0;
-        // Variáveis para rastrear se as imagens já foram geradas
-        let mut gerou_75_porcento = false;
-        let mut gerou_50_porcento = false;
-        let mut gerou_25_porcento = false;
-        let mut gerou_0_porcento = false;
+        // Controla as porcentagens de progresso para gerar imagens
+        let porcentagens = [0.75, 0.50, 0.25, 0.0];
+        let mut gerou_percentuais = [false; 4];
 
+        let mut contador_img: i64 = 0;
+
+        // Loop principal
         loop {
-            if let Ok(contador_guard) = contador.lock() {
+            if let Ok(mut contador_guard) = contador.lock() {
+                // Quando o contador atinge zero, encerra o loop
                 if *contador_guard <= 0 {
-                    // Gerar uma imagem final
                     println!("Fim do programa");
-                    match self.gerar_imagem("Cenario-final.png", (800, 640)) {
-                        Ok(_) => println!("Imagem gerada com sucesso!"),
-                        Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                    if let Err(e) =
+                        self.gerar_imagem_com_log("Cenario-final.png", &mut contador_img)
+                    {
+                        eprintln!("Erro ao gerar a imagem final: {}", e);
                     }
                     break;
-                } else {
-                    let percentual_restante = (*contador_guard as f64) / (numero_interacoes as f64);
+                }
 
-                    if !gerou_75_porcento && percentual_restante <= 0.75 {
-                        println!("Loop {} - 25% concluído", contador_guard);
-                        match self
-                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
-                        {
-                            Ok(_) => println!("Imagem gerada com sucesso!"),
-                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
+                // Calcula o percentual restante
+                let percentual_restante = *contador_guard as f64 / numero_interacoes as f64;
+
+                // Gera imagens em diferentes estágios de progresso
+                for (i, &percentual) in porcentagens.iter().enumerate() {
+                    if !gerou_percentuais[i] && percentual_restante <= percentual {
+                        if let Err(e) = self.gerar_imagem_com_log(
+                            &format!("Cenario-{}.png", contador_img),
+                            &mut contador_img,
+                        ) {
+                            eprintln!("Erro ao gerar a imagem: {}", e);
                         }
-                        contador_img += 1;
-                        gerou_75_porcento = true;
-                    } else if !gerou_50_porcento && percentual_restante <= 0.50 {
-                        println!("Loop {} - 50% concluído", contador_guard);
-                        match self
-                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
-                        {
-                            Ok(_) => println!("Imagem gerada com sucesso!"),
-                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
-                        }
-                        contador_img += 1;
-                        gerou_50_porcento = true;
-                    } else if !gerou_25_porcento && percentual_restante <= 0.25 {
-                        println!("Loop {} - 75% concluído", contador_guard);
-                        match self
-                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
-                        {
-                            Ok(_) => println!("Imagem gerada com sucesso!"),
-                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
-                        }
-                        contador_img += 1;
-                        gerou_25_porcento = true;
-                    } else if !gerou_0_porcento && percentual_restante <= 1.0 {
-                        println!("Loop {} - 0% concluído", contador_guard);
-                        match self
-                            .gerar_imagem(&format!("Cenario-{}.png", contador_img), (800, 640))
-                        {
-                            Ok(_) => println!("Imagem gerada com sucesso!"),
-                            Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
-                        }
-                        contador_img += 1;
-                        gerou_0_porcento = true;
+                        gerou_percentuais[i] = true;
                     }
                 }
             }
         }
+    }
+
+    /// Função auxiliar para gerar a imagem e fazer o log
+    fn gerar_imagem_com_log(
+        &self,
+        path: &str,
+        contador_img: &mut i64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        println!("Gerando imagem: {}", path);
+        self.gerar_imagem(path, (800, 640))?;
+        *contador_img += 1;
+        println!("Imagem {} gerada com sucesso!", path);
+        Ok(())
     }
 
     pub fn gerar_imagem(
