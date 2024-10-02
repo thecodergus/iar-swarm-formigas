@@ -46,7 +46,7 @@ pub fn gerar_graos(
     graos
 }
 
-pub fn ler_graos_de_arquivo(
+pub fn ler_graos_de_arquivo_normalizado(
     caminho: &str,
     tamanho_mapa: (f64, f64),
 ) -> Result<Vec<Grao>, Box<dyn Error>> {
@@ -122,6 +122,61 @@ pub fn ler_graos_de_arquivo(
 
         // Cria o grão com a posição aleatória e os dados normalizados
         let grao = Grao::new(Ponto { x, y }, dados_normalizados, grupo);
+
+        // Adiciona o grão ao vetor
+        graos.push(grao);
+    }
+
+    // Retorna o vetor de grãos
+    Ok(graos)
+}
+
+pub fn ler_graos_de_arquivo(
+    caminho: &str,
+    tamanho_mapa: (f64, f64),
+) -> Result<Vec<Grao>, Box<dyn Error>> {
+    // Abre o arquivo
+    let arquivo = File::open(caminho)?;
+
+    // Usa um buffer para ler o arquivo linha por linha
+    let leitor = io::BufReader::new(arquivo);
+
+    // Vetor para armazenar todas as linhas de dados
+    let mut todas_linhas: Vec<Vec<f64>> = Vec::new();
+
+    // Itera sobre as linhas do arquivo
+    for linha in leitor.lines() {
+        let linha = linha?;
+        let valores: Vec<&str> = linha.split_whitespace().collect();
+
+        // Transforma cada valor da linha em f64
+        let mut dados: Vec<f64> = valores
+            .iter()
+            .map(|&valor| valor.replace(",", ".").parse::<f64>())
+            .collect::<Result<Vec<f64>, _>>()?;
+
+        // Realiza qualquer troca necessária, se aplicável (no seu caso, troca o índice 0 com o 2)
+        dados.swap(0, 2);
+
+        // Adiciona a linha processada ao vetor
+        todas_linhas.push(dados);
+    }
+
+    // Vetor para armazenar os grãos
+    let mut graos: Vec<Grao> = Vec::new();
+    let mut rng = rand::thread_rng();
+
+    // Cria os grãos com posições aleatórias (sem normalizar os dados)
+    for mut dados in todas_linhas {
+        let grupo: i32 = dados[0] as i32;
+        dados.remove(0);
+
+        // Gera posições aleatórias dentro do tamanho do mapa
+        let x = rng.gen_range(0.0..tamanho_mapa.0) as i32;
+        let y = rng.gen_range(0.0..tamanho_mapa.1) as i32;
+
+        // Cria o grão com a posição aleatória e os dados sem normalização
+        let grao = Grao::new(Ponto { x, y }, dados, grupo);
 
         // Adiciona o grão ao vetor
         graos.push(grao);
