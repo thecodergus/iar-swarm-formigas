@@ -203,10 +203,9 @@ fn encontrar_grao_mais_proximo_vizinhanca(
                 }
                 grao_mais_proximo = Some(grao.clone());
                 distancia_minima = distancia_total;
-            } else {
-                // Caso contrário, adiciona à lista de grãos na vizinhança
-                graos_na_vizinhanca.push(grao.clone());
             }
+
+            graos_na_vizinhanca.push(grao.clone());
         }
     }
 
