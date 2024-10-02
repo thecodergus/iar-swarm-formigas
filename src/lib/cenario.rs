@@ -137,9 +137,10 @@ impl Cenario {
         let scale_x = img_width as f64 / base_dimensions.0;
         let scale_y = img_height as f64 / base_dimensions.1;
 
-        // Tamanho do lado dos quadrados (grãos) e o raio dos círculos (formigas) em pixels
-        let tamanho_grao = (1.0 * scale_x / 1.0).round() as i32;
-        let raio_formiga = ((1.0 * scale_x / 1.0).round() as i32) / 2; // Raio do círculo da formiga
+        // Reduz o tamanho dos grãos e das formigas pela metade
+        let tamanho_grao = ((1.0 * scale_x / 1.0).round() as i32) / 2; // Reduzido pela metade
+        let raio_formiga = (((1.0 * scale_x / 1.0).round() as i32) / 2) / 2; // Raio também reduzido pela metade
+
 
         // Desenha os grãos
         if let Ok(graos) = self.graos.lock() {
