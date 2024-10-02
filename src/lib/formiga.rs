@@ -15,9 +15,9 @@ pub struct Formiga {
 
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
-const ALPHA: f64 = 0.35;
-const K1: f64 = 0.05;
-const K2: f64 = 0.025;
+const ALPHA: f64 = 30.0;
+const K1: f64 = 0.01;
+const K2: f64 = 0.015;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
@@ -297,7 +297,7 @@ fn similaridade(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
                 .map(|grao_aux| {
                     // A similaridade é baseada na distância euclidiana adaptada entre os dados
                     // quanto menor a distância, maior a similaridade
-                    1.0 - (distancia_euclidiana_adaptada(&grao.dados, &grao_aux.dados)) / ALPHA
+                    1.0 - (distancia_euclidiana_adaptada(&grao.dados, &grao_aux.dados) / ALPHA)
                 })
                 .sum::<f64>();
     }
