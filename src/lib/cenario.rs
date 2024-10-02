@@ -65,7 +65,7 @@ impl Cenario {
                     // Gerar uma imagem final
                     println!("Fim do programa");
                     match self.gerar_imagem(
-                        "/home/gus/Documentos/iar-swarm-formigas/Cenario-final.png",
+                        "Cenario-final.png",
                         (800, 640),
                     ) {
                         Ok(_) => println!("Imagem gerada com sucesso!"),
@@ -127,20 +127,19 @@ impl Cenario {
         image_dimensions: (u32, u32),
     ) -> Result<(), Box<dyn std::error::Error>> {
         let (img_width, img_height) = image_dimensions;
+        let  base_dimensions: (f64, f64) = self.dimensoes;
 
-        // Definir a dimensão lógica (a "base" de 100x100)
-        let base_dimensions = (100.0, 100.0);
 
         // Cria uma imagem com fundo preto
         let mut img = ImageBuffer::from_pixel(img_width, img_height, Rgb([0u8, 0u8, 0u8]));
 
-        // Escalar o tamanho da imagem real em relação à base de 100x100
+        // Escalar o tamanho da imagem real em relação à base_dimensions fornecida
         let scale_x = img_width as f64 / base_dimensions.0;
         let scale_y = img_height as f64 / base_dimensions.1;
 
-        // Tamanho do lado dos quadrados (grãos e formigas) em pixels
+        // Tamanho do lado dos quadrados (grãos) e o raio dos círculos (formigas) em pixels
         let tamanho_grao = (1.0 * scale_x / 1.0).round() as i32;
-        let tamanho_formiga = (1.0 * scale_x / 1.0).round() as i32;
+        let raio_formiga = ((1.0 * scale_x / 1.0).round() as i32) / 2; // Raio do círculo da formiga
 
         // Desenha os grãos
         if let Ok(graos) = self.graos.lock() {
@@ -154,12 +153,8 @@ impl Cenario {
                     .expect("Cor não encontrada para o grupo de grãos");
 
                 // Ajustar as coordenadas dos grãos para o tamanho da imagem
-                let x_px =
-                    ((grao.posicao.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x)
-                        .round() as i32;
-                let y_px =
-                    ((grao.posicao.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y)
-                        .round() as i32;
+                let x_px = ((grao.posicao.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
+                let y_px = ((grao.posicao.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
 
                 // Desenha o quadrado (retângulo) representando o grão, com a cor do grupo
                 let rect = Rect::at(x_px, y_px).of_size(tamanho_grao as u32, tamanho_grao as u32);
@@ -176,18 +171,14 @@ impl Cenario {
         for formiga in self.formigas.iter() {
             if let Ok(pos) = formiga.posicao.lock() {
                 // Ajustar as coordenadas das formigas para o tamanho da imagem
-                let x_px = ((pos.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round()
-                    as i32;
-                let y_px = ((pos.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round()
-                    as i32;
+                let x_px = ((pos.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
+                let y_px = ((pos.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
 
                 if let Ok(mao) = formiga.segurando_objeto.lock() {
                     let cor_formiga = if mao.is_some() { AMARELO } else { VERMELHO };
 
-                    // Desenha o quadrado (retângulo) representando a formiga, com tamanho reduzido
-                    let rect = Rect::at(x_px, y_px)
-                        .of_size(tamanho_formiga as u32, tamanho_formiga as u32);
-                    imageproc::drawing::draw_filled_rect_mut(&mut img, rect, cor_formiga);
+                    // Desenha um círculo representando a formiga, com a cor apropriada
+                    draw_filled_circle_mut(&mut img, (x_px, y_px), raio_formiga, cor_formiga);
                 }
             } else {
                 return Err(format!("Falha ao adquirir o lock da formiga {}", formiga.id).into());
@@ -200,6 +191,7 @@ impl Cenario {
             Err(e) => Err(format!("Erro ao salvar a imagem: {}", e).into()),
         }
     }
+
 }
 
 /// Gera uma cor aleatória que não seja similar a vermelho ou amarelo
