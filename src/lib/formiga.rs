@@ -113,17 +113,21 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
             },
         };
 
-        // Verificação dos limites do mapa
+        // Verificação dos limites do mapa com teletransporte
+        // Se ultrapassar o limite à esquerda, vai para o limite direito
         if nova_posicao.x < 0 {
-            nova_posicao.x = 0;
-        } else if nova_posicao.x > tamanho_mapa.0 as i32 {
             nova_posicao.x = tamanho_mapa.0 as i32;
+        // Se ultrapassar o limite direito, vai para o limite esquerdo
+        } else if nova_posicao.x > tamanho_mapa.0 as i32 {
+            nova_posicao.x = 0;
         }
 
+        // Se ultrapassar o limite superior, vai para o limite inferior
         if nova_posicao.y < 0 {
-            nova_posicao.y = 0;
-        } else if nova_posicao.y > tamanho_mapa.1 as i32 {
             nova_posicao.y = tamanho_mapa.1 as i32;
+        // Se ultrapassar o limite inferior, vai para o limite superior
+        } else if nova_posicao.y > tamanho_mapa.1 as i32 {
+            nova_posicao.y = 0;
         }
 
         nova_posicao
@@ -132,6 +136,7 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
         std::process::exit(1);
     }
 }
+
 
 pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
     // Criar 10 formigas aleatórias
