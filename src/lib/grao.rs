@@ -13,19 +13,26 @@ pub struct Grao {
     pub id: Uuid,
     pub posicao: Ponto,
     pub dados: Vec<f64>,
+    pub grupo: i32,
 }
 
 impl Grao {
-    pub fn new(posicao: Ponto, dados: Vec<f64>) -> Grao {
+    pub fn new(posicao: Ponto, dados: Vec<f64>, grupo: i32) -> Grao {
         Grao {
             id: Uuid::new_v4(),
             posicao,
             dados,
+            grupo,
         }
     }
 }
 
-pub fn gerar_graos(numero: i32, tamanho_mapa: (f64, f64), dados: Vec<f64>) -> Vec<Grao> {
+pub fn gerar_graos(
+    numero: i32,
+    tamanho_mapa: (f64, f64),
+    dados: Vec<f64>,
+    grupo: i32,
+) -> Vec<Grao> {
     let mut graos: Vec<Grao> = vec![];
 
     let mut rng = rand::thread_rng();
@@ -33,7 +40,7 @@ pub fn gerar_graos(numero: i32, tamanho_mapa: (f64, f64), dados: Vec<f64>) -> Ve
     for _ in 0..numero {
         let x: i32 = rng.gen_range(0..=(tamanho_mapa.0 as i32));
         let y: i32 = rng.gen_range(0..=tamanho_mapa.1 as i32);
-        graos.push(Grao::new(Ponto { x: x, y: y }, dados.clone()));
+        graos.push(Grao::new(Ponto { x: x, y: y }, dados.clone(), grupo));
     }
 
     graos
@@ -63,8 +70,9 @@ pub fn ler_graos_de_arquivo(
             .map(|&valor| valor.replace(",", ".").parse::<f64>())
             .collect::<Result<Vec<f64>, _>>()?;
 
-        // Realiza qualquer troca necessária, se aplicável (no seu caso, troca o índice 0 com o 2)
-        dados.swap(0, 2);
+        // Pega o item do grupo
+        let grupo: i32 = dados[2];
+        dados.remove(2);
 
         // Adiciona a linha processada ao vetor
         todas_linhas.push(dados);
@@ -111,7 +119,7 @@ pub fn ler_graos_de_arquivo(
         let y = rng.gen_range(0.0..tamanho_mapa.1) as i32;
 
         // Cria o grão com a posição aleatória e os dados normalizados
-        let grao = Grao::new(Ponto { x, y }, dados_normalizados);
+        let grao = Grao::new(Ponto { x, y }, dados_normalizados, grupo);
 
         // Adiciona o grão ao vetor
         graos.push(grao);
