@@ -16,7 +16,7 @@ pub struct Formiga {
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
 const ALPHA: f64 = 0.35;
-const K1: f64 = 0.6;
+const K1: f64 = 0.05;
 const K2: f64 = 0.025;
 
 impl Formiga {
@@ -183,7 +183,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
     na_mao: &Option<Grao>,
 ) -> (Option<Grao>, Vec<Grao>) {
     let mut graos_na_vizinhanca: Vec<Grao> = vec![];
-    let mut grao_no_local: Option<Grao> = None;
+    let mut grao_no_local: Option<Grao> = na_mao.clone();
 
     if let Some(g) = na_mao {
         graos_na_vizinhanca.push(g.clone());
@@ -197,7 +197,7 @@ fn encontrar_grao_mais_proximo_vizinhanca(
         if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
             graos_na_vizinhanca.push(grao.clone());
 
-            if grao.posicao == *posicao {
+            if grao.posicao == *posicao && grao_no_local.is_none() {
                 grao_no_local = Some(grao.clone());
             }
         }
