@@ -230,7 +230,7 @@ fn acao_segurar_objeto(
         if let Ok(mut graos_guard) = graos.lock() {
             if let Ok(posicao_guard) = posicao_formiga.lock() {
                 // Chamando a função e desestruturando o retorno em duas variáveis
-                let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
+                let (grao_mais_proximo, graos_entorno) = encontrar_grao_mais_proximo_vizinhanca(
                     &posicao_guard,
                     &graos_guard,
                     &objeto_guard,
@@ -240,7 +240,7 @@ fn acao_segurar_objeto(
                 if let Some(grao_carregado) = &mut *objeto_guard {
                     if !ha_grao_na_posicao_formiga(&posicao_guard, &graos_guard) {
                         // Largar (caso queira largar o objeto em uma posição vazia)
-                        if probabilidade <= pode_largar(grao_carregado, &graos_restantes) {
+                        if probabilidade <= pode_largar(grao_carregado, &graos_entorno) {
                             // Adiciona o grão na lista de grãos novamente
                             grao_carregado.posicao = posicao_guard.clone();
                             adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
@@ -251,7 +251,7 @@ fn acao_segurar_objeto(
                     // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
                     if let Some(grao) = &grao_mais_proximo {
                         // Probabilidade de pegar o grão
-                        if probabilidade <= pode_pegar(grao, &graos_restantes) {
+                        if probabilidade <= pode_pegar(grao, &graos_entorno) {
                             // Adicionar o grão à mão da formiga
                             objeto_guard.replace(grao.clone());
 
