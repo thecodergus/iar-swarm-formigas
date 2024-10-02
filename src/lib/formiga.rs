@@ -183,38 +183,27 @@ fn encontrar_grao_mais_proximo_vizinhanca(
     na_mao: &Option<Grao>,
 ) -> (Option<Grao>, Vec<Grao>) {
     let mut graos_na_vizinhanca: Vec<Grao> = vec![];
-    let mut grao_mais_proximo: Option<Grao> = None;
-    let mut distancia_minima: f64 = f64::MAX;
+    let mut grao_no_local: Option<Grao> = None;
 
     if let Some(g) = na_mao {
         graos_na_vizinhanca.push(g.clone());
     }
 
-    // Trava o mutex para acessar a posição da formiga
-    // Trava o mutex para acessar a lista de grãos
     for grao in graos_guard.iter() {
         let distancia_x: f64 = (grao.posicao.x as f64 - posicao.x as f64).abs();
         let distancia_y: f64 = (grao.posicao.y as f64 - posicao.y as f64).abs();
-        let distancia_total: f64 = (distancia_x.powi(2) + distancia_y.powi(2)).sqrt();
 
         // Verifica se o grão está dentro da vizinhança e não está na mesma posição exata
         if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
-            // Verifica se este grão é o mais próximo
-            if distancia_total < distancia_minima {
-                // Se for o mais próximo até agora, atualiza o mais próximo
-                if let Some(grao_atual) = grao_mais_proximo.take() {
-                    // Adiciona o antigo grão mais próximo ao vetor de grãos
-                    graos_na_vizinhanca.push(grao_atual);
-                }
-                grao_mais_proximo = Some(grao.clone());
-                distancia_minima = distancia_total;
-            }
-
             graos_na_vizinhanca.push(grao.clone());
+
+            if grao.posicao == *posicao {
+                grao_no_local = Some(grao.clone());
+            }
         }
     }
 
-    (grao_mais_proximo, graos_na_vizinhanca)
+    (grao_no_local, graos_na_vizinhanca)
 }
 
 fn acao_segurar_objeto(
@@ -230,7 +219,7 @@ fn acao_segurar_objeto(
         if let Ok(mut graos_guard) = graos.lock() {
             if let Ok(posicao_guard) = posicao_formiga.lock() {
                 // Chamando a função e desestruturando o retorno em duas variáveis
-                let (grao_mais_proximo, graos_entorno) = encontrar_grao_mais_proximo_vizinhanca(
+                let (grao_na_posicao, graos_entorno) = encontrar_grao_mais_proximo_vizinhanca(
                     &posicao_guard,
                     &graos_guard,
                     &objeto_guard,
@@ -249,7 +238,7 @@ fn acao_segurar_objeto(
                     }
                 } else {
                     // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
-                    if let Some(grao) = &grao_mais_proximo {
+                    if let Some(grao) = &grao_na_posicao {
                         // Probabilidade de pegar o grão
                         if probabilidade <= pode_pegar(grao, &graos_entorno) {
                             // Adicionar o grão à mão da formiga
