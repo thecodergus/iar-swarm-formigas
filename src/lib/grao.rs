@@ -70,9 +70,8 @@ pub fn ler_graos_de_arquivo(
             .map(|&valor| valor.replace(",", ".").parse::<f64>())
             .collect::<Result<Vec<f64>, _>>()?;
 
-        // Pega o item do grupo
-        let grupo: i32 = dados[2] as i32;
-        dados.remove(2);
+        // Realiza qualquer troca necessária, se aplicável (no seu caso, troca o índice 0 com o 2)
+        dados.swap(0, 2);
 
         // Adiciona a linha processada ao vetor
         todas_linhas.push(dados);
@@ -100,7 +99,10 @@ pub fn ler_graos_de_arquivo(
     let mut rng = rand::thread_rng();
 
     // Normaliza os dados e cria os grãos com posições aleatórias
-    for dados in todas_linhas {
+    for mut dados in todas_linhas {
+        let grupo: i32 = dados[0] as i32;
+        dados.remove(0);
+
         let dados_normalizados: Vec<f64> = dados
             .iter()
             .enumerate()
