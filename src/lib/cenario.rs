@@ -27,7 +27,7 @@ impl Cenario {
         // Inicializa o mapa de cores para os grupos de grãos
         for grao in &graos {
             cores_por_grupo
-                .entry(format!("{:?}", grao.dados.first().unwrap()))
+                .entry(format!("{:?}", grao.grupo))
                 .or_insert_with(|| gerar_cor_aleatoria());
         }
 
@@ -64,10 +64,7 @@ impl Cenario {
                 if *contador_guard <= 0 {
                     // Gerar uma imagem final
                     println!("Fim do programa");
-                    match self.gerar_imagem(
-                        "Cenario-final.png",
-                        (800, 640),
-                    ) {
+                    match self.gerar_imagem("Cenario-final.png", (800, 640)) {
                         Ok(_) => println!("Imagem gerada com sucesso!"),
                         Err(e) => eprintln!("Erro ao gerar a imagem: {}", e),
                     }
@@ -127,8 +124,7 @@ impl Cenario {
         image_dimensions: (u32, u32),
     ) -> Result<(), Box<dyn std::error::Error>> {
         let (img_width, img_height) = image_dimensions;
-        let  base_dimensions: (f64, f64) = self.dimensoes;
-
+        let base_dimensions: (f64, f64) = self.dimensoes;
 
         // Cria uma imagem com fundo preto
         let mut img = ImageBuffer::from_pixel(img_width, img_height, Rgb([0u8, 0u8, 0u8]));
@@ -141,7 +137,6 @@ impl Cenario {
         let tamanho_grao = ((1.0 * scale_x / 1.0).round() as i32) / 2; // Reduzido pela metade
         let raio_formiga = (((1.0 * scale_x / 1.0).round() as i32) / 2) / 2; // Raio também reduzido pela metade
 
-
         // Desenha os grãos
         if let Ok(graos) = self.graos.lock() {
             println!("Numero de grãos: {}", graos.len());
@@ -150,12 +145,16 @@ impl Cenario {
                 // Verifica se já existe uma cor associada ao grupo de dados desse grão
                 let cor = self
                     .cores_por_grupo
-                    .get(&format!("{:?}", grao.dados.first().unwrap()))
+                    .get(&format!("{:?}", grao.grupo))
                     .expect("Cor não encontrada para o grupo de grãos");
 
                 // Ajustar as coordenadas dos grãos para o tamanho da imagem
-                let x_px = ((grao.posicao.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
-                let y_px = ((grao.posicao.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
+                let x_px =
+                    ((grao.posicao.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x)
+                        .round() as i32;
+                let y_px =
+                    ((grao.posicao.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y)
+                        .round() as i32;
 
                 // Desenha o quadrado (retângulo) representando o grão, com a cor do grupo
                 let rect = Rect::at(x_px, y_px).of_size(tamanho_grao as u32, tamanho_grao as u32);
@@ -172,8 +171,10 @@ impl Cenario {
         for formiga in self.formigas.iter() {
             if let Ok(pos) = formiga.posicao.lock() {
                 // Ajustar as coordenadas das formigas para o tamanho da imagem
-                let x_px = ((pos.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round() as i32;
-                let y_px = ((pos.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round() as i32;
+                let x_px = ((pos.x as f64 / self.dimensoes.0) * base_dimensions.0 * scale_x).round()
+                    as i32;
+                let y_px = ((pos.y as f64 / self.dimensoes.1) * base_dimensions.1 * scale_y).round()
+                    as i32;
 
                 if let Ok(mao) = formiga.segurando_objeto.lock() {
                     let cor_formiga = if mao.is_some() { AMARELO } else { VERMELHO };
@@ -192,7 +193,6 @@ impl Cenario {
             Err(e) => Err(format!("Erro ao salvar a imagem: {}", e).into()),
         }
     }
-
 }
 
 /// Gera uma cor aleatória que não seja similar a vermelho ou amarelo
