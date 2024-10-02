@@ -71,7 +71,7 @@ pub fn ler_graos_de_arquivo(
             .collect::<Result<Vec<f64>, _>>()?;
 
         // Pega o item do grupo
-        let grupo: i32 = dados[2];
+        let grupo: i32 = dados[2] as i32;
         dados.remove(2);
 
         // Adiciona a linha processada ao vetor
