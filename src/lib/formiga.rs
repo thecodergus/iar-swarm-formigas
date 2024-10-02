@@ -86,29 +86,56 @@ impl Formiga {
 
 fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
-    let num_aleatorio: i32 = rng.gen_range(1..=4);
+
+    // Gera um número aleatório de 1 a 8 para escolher a direção
+    let num_aleatorio: i32 = rng.gen_range(1..=8);
 
     if let Ok(posicao_guard) = posicao.lock() {
         let mut nova_posicao = match num_aleatorio {
             1 => Ponto {
+                // Cima
                 x: posicao_guard.x,
                 y: posicao_guard.y + 1 as i32,
             },
             2 => Ponto {
+                // Direita
                 x: posicao_guard.x + 1 as i32,
                 y: posicao_guard.y,
             },
             3 => Ponto {
+                // Baixo
                 x: posicao_guard.x,
                 y: posicao_guard.y - 1 as i32,
             },
             4 => Ponto {
+                // Esquerda
                 x: posicao_guard.x - 1 as i32,
                 y: posicao_guard.y,
             },
+            5 => Ponto {
+                // Diagonal superior direita
+                x: posicao_guard.x + 1 as i32,
+                y: posicao_guard.y + 1 as i32,
+            },
+            6 => Ponto {
+                // Diagonal superior esquerda
+                x: posicao_guard.x - 1 as i32,
+                y: posicao_guard.y + 1 as i32,
+            },
+            7 => Ponto {
+                // Diagonal inferior direita
+                x: posicao_guard.x + 1 as i32,
+                y: posicao_guard.y - 1 as i32,
+            },
+            8 => Ponto {
+                // Diagonal inferior esquerda
+                x: posicao_guard.x - 1 as i32,
+                y: posicao_guard.y - 1 as i32,
+            },
             _ => Ponto {
+                // Mantém a posição atual, caso um número inesperado seja gerado
                 x: posicao_guard.x,
-                y: posicao_guard.y, // Mantém a posição atual se o número aleatório não for esperado
+                y: posicao_guard.y,
             },
         };
 
@@ -136,7 +163,6 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
     }
 }
 
-
 pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
     // Criar 10 formigas aleatórias
     let mut rng = rand::thread_rng();
@@ -160,30 +186,29 @@ fn encontrar_grao_mais_proximo_vizinhanca(
     let mut distancia_minima: f64 = f64::MAX;
 
     // Trava o mutex para acessar a posição da formiga
-        // Trava o mutex para acessar a lista de grãos
-            for grao in graos_guard.iter() {
-                let distancia_x: f64 = (grao.posicao.x as f64 - posicao.x as f64).abs();
-                let distancia_y: f64 = (grao.posicao.y as f64 - posicao.y as f64).abs();
-                let distancia_total: f64 = (distancia_x.powi(2) + distancia_y.powi(2)).sqrt();
+    // Trava o mutex para acessar a lista de grãos
+    for grao in graos_guard.iter() {
+        let distancia_x: f64 = (grao.posicao.x as f64 - posicao.x as f64).abs();
+        let distancia_y: f64 = (grao.posicao.y as f64 - posicao.y as f64).abs();
+        let distancia_total: f64 = (distancia_x.powi(2) + distancia_y.powi(2)).sqrt();
 
-                // Verifica se o grão está dentro da vizinhança e não está na mesma posição exata
-                if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
-                    // Verifica se este grão é o mais próximo
-                    if distancia_total < distancia_minima {
-                        // Se for o mais próximo até agora, atualiza o mais próximo
-                        if let Some(grao_atual) = grao_mais_proximo.take() {
-                            // Adiciona o antigo grão mais próximo ao vetor de grãos
-                            graos_na_vizinhanca.push(grao_atual);
-                        }
-                        grao_mais_proximo = Some(grao.clone());
-                        distancia_minima = distancia_total;
-                    } else {
-                        // Caso contrário, adiciona à lista de grãos na vizinhança
-                        graos_na_vizinhanca.push(grao.clone());
-                    }
+        // Verifica se o grão está dentro da vizinhança e não está na mesma posição exata
+        if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
+            // Verifica se este grão é o mais próximo
+            if distancia_total < distancia_minima {
+                // Se for o mais próximo até agora, atualiza o mais próximo
+                if let Some(grao_atual) = grao_mais_proximo.take() {
+                    // Adiciona o antigo grão mais próximo ao vetor de grãos
+                    graos_na_vizinhanca.push(grao_atual);
                 }
+                grao_mais_proximo = Some(grao.clone());
+                distancia_minima = distancia_total;
+            } else {
+                // Caso contrário, adiciona à lista de grãos na vizinhança
+                graos_na_vizinhanca.push(grao.clone());
             }
-
+        }
+    }
 
     (grao_mais_proximo, graos_na_vizinhanca)
 }
@@ -199,12 +224,10 @@ fn acao_segurar_objeto(
     // Tenta adquirir o lock no objeto e trabalhar com ele
     if let Ok(mut objeto_guard) = objeto.lock() {
         if let Ok(mut graos_guard) = graos.lock() {
-            if let Ok(posicao_guard) = posicao_formiga.lock(){
+            if let Ok(posicao_guard) = posicao_formiga.lock() {
                 // Chamando a função e desestruturando o retorno em duas variáveis
-                let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
-                    &posicao_guard,
-                    &graos_guard,
-                );
+                let (grao_mais_proximo, graos_restantes) =
+                    encontrar_grao_mais_proximo_vizinhanca(&posicao_guard, &graos_guard);
 
                 // Se a formiga já estiver carregando algum grão
                 if let Some(grao_carregado) = &mut *objeto_guard {
@@ -215,7 +238,6 @@ fn acao_segurar_objeto(
                             grao_carregado.posicao = posicao_guard.clone();
                             adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
                             *objeto_guard = None; // Limpa a mão da formiga
-
                         }
                     }
                 } else {
@@ -231,8 +253,8 @@ fn acao_segurar_objeto(
                         }
                     }
                 }
+            }
         }
-    }
     }
 }
 
@@ -318,10 +340,8 @@ fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
 // segura usando mecanismos de concorrência como Arc<Mutex> para garantir que outros processos não
 // acessem os dados simultaneamente.
 fn remover_grao(g: &Grao, graos: &mut Vec<Grao>) {
-    
-        // Filtra o vetor de grãos para manter apenas os grãos cujo ID seja diferente do grão removido
-        graos.retain(|g_| g.id != g_.id);
-    
+    // Filtra o vetor de grãos para manter apenas os grãos cujo ID seja diferente do grão removido
+    graos.retain(|g_| g.id != g_.id);
 }
 
 // Função que adiciona um grão à lista de grãos
@@ -332,18 +352,15 @@ fn adicionar_grao(g: &Grao, graos: &mut Vec<Grao>) {
     graos.push(g.clone());
 }
 
-fn ha_grao_na_posicao_formiga(
-    posicao_formiga: &Ponto,
-    graos_guard: &Vec<Grao>,
-) -> bool {
+fn ha_grao_na_posicao_formiga(posicao_formiga: &Ponto, graos_guard: &Vec<Grao>) -> bool {
     // Trava o mutex para acessar a posição da formiga
-        // Trava o mutex para acessar a lista de grãos
-            // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
-            for grao in graos_guard.iter() {
-                if grao.posicao == *posicao_formiga {
-                    return true; // Retorna true se encontrar um grão na mesma posição
-                }
-            }
+    // Trava o mutex para acessar a lista de grãos
+    // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
+    for grao in graos_guard.iter() {
+        if grao.posicao == *posicao_formiga {
+            return true; // Retorna true se encontrar um grão na mesma posição
+        }
+    }
 
     false // Retorna false se nenhum grão for encontrado
 }
@@ -357,7 +374,10 @@ mod tests {
         let a = vec![1.0, 2.0, 3.0];
         let b = vec![1.0, 2.0, 3.0];
         let result = distancia_euclidiana_adaptada(&a, &b);
-        assert_eq!(result, 0.0, "A distância entre vetores idênticos deve ser 0.");
+        assert_eq!(
+            result, 0.0,
+            "A distância entre vetores idênticos deve ser 0."
+        );
     }
 
     #[test]
@@ -365,8 +385,13 @@ mod tests {
         let a = vec![1.0, 2.0, 3.0];
         let b = vec![4.0, 5.0, 6.0];
         let result = distancia_euclidiana_adaptada(&a, &b);
-        let expected = ((1.0 - 4.0 as f64).powi(2) + (2.0 - 5.0 as f64).powi(2) + (3.0 - 6.0 as f64).powi(2)).sqrt();
-        assert_eq!(result, expected, "A distância deve ser calculada corretamente.");
+        let expected =
+            ((1.0 - 4.0 as f64).powi(2) + (2.0 - 5.0 as f64).powi(2) + (3.0 - 6.0 as f64).powi(2))
+                .sqrt();
+        assert_eq!(
+            result, expected,
+            "A distância deve ser calculada corretamente."
+        );
     }
 
     #[test]
@@ -374,8 +399,13 @@ mod tests {
         let a: Vec<f64> = vec![1.1, 2.2, 3.3];
         let b: Vec<f64> = vec![4.4, 5.5, 6.6];
         let result: f64 = distancia_euclidiana_adaptada(&a, &b);
-        let expected = ((1.1 - 4.4 as f64).powi(2) + (2.2 - 5.5 as f64).powi(2) + (3.3 - 6.6 as f64).powi(2)).sqrt();
-        assert!((result - expected).abs() < f64::EPSILON, "A distância deve ser precisa para valores em ponto flutuante.");
+        let expected =
+            ((1.1 - 4.4 as f64).powi(2) + (2.2 - 5.5 as f64).powi(2) + (3.3 - 6.6 as f64).powi(2))
+                .sqrt();
+        assert!(
+            (result - expected).abs() < f64::EPSILON,
+            "A distância deve ser precisa para valores em ponto flutuante."
+        );
     }
 
     #[test]
@@ -383,7 +413,10 @@ mod tests {
         let a = vec![0.0, 0.0, 0.0];
         let b = vec![0.0, 0.0, 0.0];
         let result = distancia_euclidiana_adaptada(&a, &b);
-        assert_eq!(result, 0.0, "A distância entre dois vetores de zeros deve ser 0.");
+        assert_eq!(
+            result, 0.0,
+            "A distância entre dois vetores de zeros deve ser 0."
+        );
     }
 
     #[test]
@@ -391,8 +424,14 @@ mod tests {
         let a = vec![-1.0, -2.0, -3.0];
         let b = vec![1.0, 2.0, 3.0];
         let result = distancia_euclidiana_adaptada(&a, &b);
-        let expected: f64 = ((-1.0 - 1.0 as f64).powi(2) + (-2.0 - 2.0 as f64).powi(2) + (-3.0 - 3.0 as f64).powi(2)).sqrt();
-        assert_eq!(result, expected, "A distância deve ser calculada corretamente para valores negativos.");
+        let expected: f64 = ((-1.0 - 1.0 as f64).powi(2)
+            + (-2.0 - 2.0 as f64).powi(2)
+            + (-3.0 - 3.0 as f64).powi(2))
+        .sqrt();
+        assert_eq!(
+            result, expected,
+            "A distância deve ser calculada corretamente para valores negativos."
+        );
     }
 
     #[test]
