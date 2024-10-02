@@ -54,7 +54,7 @@ impl Cenario {
 
         // Controla as porcentagens de progresso para gerar imagens
         let porcentagens = [1.0, 0.75, 0.50, 0.25, 0.0];
-        let mut gerou_percentuais = [false; 4];
+        let mut gerou_percentuais = [false; 5];
 
         let mut contador_img: i64 = 0;
 
