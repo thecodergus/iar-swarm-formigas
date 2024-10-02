@@ -16,7 +16,7 @@ pub struct Formiga {
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
 const ALPHA: f64 = 0.35;
-const K1: f64 = 0.5;
+const K1: f64 = 0.6;
 const K2: f64 = 0.025;
 
 impl Formiga {
@@ -180,10 +180,15 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
 fn encontrar_grao_mais_proximo_vizinhanca(
     posicao: &Ponto,
     graos_guard: &Vec<Grao>,
+    na_mao: &Option<Grao>,
 ) -> (Option<Grao>, Vec<Grao>) {
     let mut graos_na_vizinhanca: Vec<Grao> = vec![];
     let mut grao_mais_proximo: Option<Grao> = None;
     let mut distancia_minima: f64 = f64::MAX;
+
+    if let Some(g) = na_mao {
+        graos_na_vizinhanca.push(g.clone());
+    }
 
     // Trava o mutex para acessar a posição da formiga
     // Trava o mutex para acessar a lista de grãos
@@ -225,8 +230,11 @@ fn acao_segurar_objeto(
         if let Ok(mut graos_guard) = graos.lock() {
             if let Ok(posicao_guard) = posicao_formiga.lock() {
                 // Chamando a função e desestruturando o retorno em duas variáveis
-                let (grao_mais_proximo, graos_restantes) =
-                    encontrar_grao_mais_proximo_vizinhanca(&posicao_guard, &graos_guard);
+                let (grao_mais_proximo, graos_restantes) = encontrar_grao_mais_proximo_vizinhanca(
+                    &posicao_guard,
+                    &graos_guard,
+                    &objeto_guard,
+                );
 
                 // Se a formiga já estiver carregando algum grão
                 if let Some(grao_carregado) = &mut *objeto_guard {
