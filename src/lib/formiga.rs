@@ -15,7 +15,6 @@ pub struct Formiga {
 
 // Parametros
 const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
-const VELOCIDADE: f64 = 1.0;
 const ALPHA: f64 = 10.0;
 const K1: f64 = 0.2;
 const K2: f64 = 0.6;
@@ -93,18 +92,18 @@ fn nova_posicao(posicao: Arc<Mutex<Ponto>>, tamanho_mapa: (f64, f64)) -> Ponto {
         let mut nova_posicao = match num_aleatorio {
             1 => Ponto {
                 x: posicao_guard.x,
-                y: posicao_guard.y + (1.0 * VELOCIDADE) as i32,
+                y: posicao_guard.y + 1 as i32,
             },
             2 => Ponto {
-                x: posicao_guard.x + (1.0 * VELOCIDADE) as i32,
+                x: posicao_guard.x + 1 as i32,
                 y: posicao_guard.y,
             },
             3 => Ponto {
                 x: posicao_guard.x,
-                y: posicao_guard.y - (1.0 * VELOCIDADE) as i32,
+                y: posicao_guard.y - 1 as i32,
             },
             4 => Ponto {
-                x: posicao_guard.x - (1.0 * VELOCIDADE) as i32,
+                x: posicao_guard.x - 1 as i32,
                 y: posicao_guard.y,
             },
             _ => Ponto {
