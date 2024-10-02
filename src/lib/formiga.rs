@@ -179,24 +179,28 @@ pub fn gerar_formigas(numero: i32, tamanho_mapa: (f64, f64)) -> Vec<Formiga> {
 
 fn encontrar_grao_mais_proximo_vizinhanca(
     posicao: &Ponto,
-    graos_guard: &Vec<Grao>,
+    graos_guardados: &[Grao], // Usar slice é mais idiomático do que Vec<&Grao> para leitura
     na_mao: &Option<Grao>,
 ) -> (Option<Grao>, Vec<Grao>) {
-    let mut graos_na_vizinhanca: Vec<Grao> = vec![];
-    let mut grao_no_local: Option<Grao> = na_mao.clone();
+    // Vetor para armazenar os grãos dentro da vizinhança
+    let mut graos_na_vizinhanca: Vec<Grao> = Vec::new();
+    let mut grao_no_local = na_mao.clone(); // Clona o grão se estiver "na mão"
 
-    if let Some(g) = na_mao {
-        graos_na_vizinhanca.push(g.clone());
+    // Se houver um grão "na mão", adiciona-o à vizinhança
+    if let Some(grao) = na_mao {
+        graos_na_vizinhanca.push(grao.clone());
     }
 
-    for grao in graos_guard.iter() {
-        let distancia_x: f64 = (grao.posicao.x as f64 - posicao.x as f64).abs();
-        let distancia_y: f64 = (grao.posicao.y as f64 - posicao.y as f64).abs();
+    // Itera sobre os grãos guardados
+    for grao in graos_guardados.iter() {
+        let distancia_x = (grao.posicao.x as f64 - posicao.x as f64).abs();
+        let distancia_y = (grao.posicao.y as f64 - posicao.y as f64).abs();
 
-        // Verifica se o grão está dentro da vizinhança e não está na mesma posição exata
+        // Verifica se o grão está dentro da vizinhança, sem considerar a mesma posição
         if distancia_x <= TAMANHO_VIZINHANCA && distancia_y <= TAMANHO_VIZINHANCA {
             graos_na_vizinhanca.push(grao.clone());
 
+            // Se o grão está exatamente na mesma posição e não há grão "no local"
             if grao.posicao == *posicao && grao_no_local.is_none() {
                 grao_no_local = Some(grao.clone());
             }
@@ -211,45 +215,39 @@ fn acao_segurar_objeto(
     objeto: Arc<Mutex<Option<Grao>>>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
-    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
-    let probabilidade: f64 = rng.gen_range(0.0..=1.0);
+    // Gera a probabilidade aleatória
+    let mut rng = rand::thread_rng();
+    let probabilidade = rng.gen_range(0.0..=1.0);
 
-    // Tenta adquirir o lock no objeto e trabalhar com ele
-    if let Ok(mut objeto_guard) = objeto.lock() {
-        if let Ok(mut graos_guard) = graos.lock() {
-            if let Ok(posicao_guard) = posicao_formiga.lock() {
-                // Chamando a função e desestruturando o retorno em duas variáveis
-                let (grao_na_posicao, graos_entorno) = encontrar_grao_mais_proximo_vizinhanca(
-                    &posicao_guard,
-                    &graos_guard,
-                    &objeto_guard,
-                );
+    // Adquire os locks de uma vez, tratando possíveis falhas de bloqueio
+    let mut objeto_guard = objeto.lock().expect("Erro ao adquirir lock do objeto.");
+    let mut graos_guard = graos.lock().expect("Erro ao adquirir lock dos grãos.");
+    let posicao_guard = posicao_formiga
+        .lock()
+        .expect("Erro ao adquirir lock da posição da formiga.");
 
-                // Se a formiga já estiver carregando algum grão
-                if let Some(grao_carregado) = &mut *objeto_guard {
-                    if !ha_grao_na_posicao_formiga(&posicao_guard, &graos_guard) {
-                        // Largar (caso queira largar o objeto em uma posição vazia)
-                        if probabilidade <= pode_largar(grao_carregado, &graos_entorno) {
-                            // Adiciona o grão na lista de grãos novamente
-                            grao_carregado.posicao = posicao_guard.clone();
-                            adicionar_grao(grao_carregado, &mut graos_guard); // Passa referência ao grão
-                            *objeto_guard = None; // Limpa a mão da formiga
-                        }
-                    }
-                } else {
-                    // Se a formiga não estiver carregando nada, tenta pegar um grão na posição
-                    if let Some(grao) = &grao_na_posicao {
-                        // Probabilidade de pegar o grão
-                        if probabilidade <= pode_pegar(grao, &graos_entorno) {
-                            // Adicionar o grão à mão da formiga
-                            objeto_guard.replace(grao.clone());
+    // Encontra o grão na posição e os grãos ao redor
+    let (grao_na_posicao, graos_entorno) =
+        encontrar_grao_mais_proximo_vizinhanca(&posicao_guard, &graos_guard, &objeto_guard);
 
-                            // Remover o grão do vetor de grãos
-                            remover_grao(grao, &mut graos_guard);
-                        }
-                    }
-                }
-            }
+    // Se a formiga estiver carregando um grão
+    if let Some(grao_carregado) = &mut *objeto_guard {
+        // Verifica se a formiga pode largar o grão na posição atual
+        if !ha_grao_na_posicao_formiga(&posicao_guard, &graos_guard)
+            && probabilidade <= pode_largar(grao_carregado, &graos_entorno)
+        {
+            // Atualiza a posição do grão e o adiciona de volta à lista de grãos
+            grao_carregado.posicao = posicao_guard.clone();
+            adicionar_grao(grao_carregado, &mut graos_guard);
+            *objeto_guard = None; // A formiga larga o grão
+        }
+    }
+    // Se a formiga não estiver carregando nada
+    else if let Some(grao) = grao_na_posicao {
+        // Verifica se a formiga pode pegar o grão na posição atual
+        if probabilidade <= pode_pegar(&grao, &graos_entorno) {
+            *objeto_guard = Some(grao.clone()); // A formiga pega o grão
+            remover_grao(&grao, &mut graos_guard); // Remove o grão da lista de grãos
         }
     }
 }
