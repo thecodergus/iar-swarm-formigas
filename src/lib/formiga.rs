@@ -249,13 +249,19 @@ fn similaridade(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
     let quantidade_dados: usize = graos_perto.len();
 
     if quantidade_dados > 0 {
-        return graos_perto
+        let resultado: f64 = graos_perto
             .iter()
             .map(|g| (1.0 - distancia_entre_par_de_dados(&grao.dados, &g.dados)) / ALPHA)
             .sum::<f64>()
             / 2.0
             * TAMANHO_VIZINHANCA as f64
             + 1.0;
+
+        if resultado > 0.0 {
+            return resultado;
+        } else {
+            return 0.0;
+        }
     }
 
     return 0.0;
