@@ -266,13 +266,5 @@ fn pp(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
 }
 
 fn pd(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
-    let resultado: f64 = similaridade(grao, graos_perto);
-
-    if resultado < K2 {
-        return 2.0 * resultado;
-    } else if resultado >= K2 {
-        return 1.0;
-    }
-
-    return 0.0;
+    (similaridade(grao, graos_perto) / (K2 + similaridade(grao, graos_perto))).powi(2)
 }
