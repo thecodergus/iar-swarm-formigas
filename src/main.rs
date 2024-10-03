@@ -1,7 +1,7 @@
 mod lib;
 use lib::cenario::Cenario;
 use lib::formiga::{gerar_formigas, Formiga};
-use lib::grao::{gerar_graos, ler_graos_de_arquivo};
+use lib::grao::{gerar_graos, ler_graos_de_arquivo, ler_graos_de_arquivo_normalizado};
 
 fn main() {
     let tamanho: (f64, f64) = (64.0, 64.0);
@@ -13,7 +13,7 @@ fn main() {
     let mut cenario: Cenario = Cenario::new(
         tamanho,
         gerar_formigas(quantidade_formigas, tamanho_mapa),
-        ler_graos_de_arquivo("Square1-DataSet-400itens.txt", tamanho_mapa).unwrap(),
+        ler_graos_de_arquivo_normalizado("Square1-DataSet-400itens.txt", tamanho_mapa).unwrap(),
     );
     cenario.start(2_000_000)
 }
