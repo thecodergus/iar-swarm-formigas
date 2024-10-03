@@ -1,3 +1,4 @@
+use super::constantes::{ALPHA, K1, K2, TAMANHO_VIZINHANCA};
 use super::grao::{self, Grao};
 use super::outros::Ponto;
 use rand::{thread_rng, Rng};
@@ -12,12 +13,6 @@ pub struct Formiga {
     pub segurando_objeto: Arc<Mutex<Option<Grao>>>,
     matar_thread: Arc<Mutex<bool>>,
 }
-
-// Parametros
-const TAMANHO_VIZINHANCA: i32 = 1; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
-const ALPHA: f64 = 12.0;
-const K1: f64 = 0.5;
-const K2: f64 = 0.5;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
