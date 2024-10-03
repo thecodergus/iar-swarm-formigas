@@ -14,7 +14,7 @@ pub struct Formiga {
 }
 
 // Parametros
-const TAMANHO_VIZINHANCA: f64 = 1.0; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
+const TAMANHO_VIZINHANCA: i32 = 1; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
 const ALPHA: f64 = 12.0;
 const K1: f64 = 0.5;
 const K2: f64 = 0.5;
@@ -182,4 +182,42 @@ fn acao_segurar_objeto(
     objeto: Arc<Mutex<Option<Grao>>>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
+    let posicao_formiga_guard = posicao_formiga
+        .lock()
+        .expect("Não foi possivel dar lock em formiga");
+    let objeto_guard = objeto.lock().expect("Não foi possivel dar lock em objeto");
+    let graos_guard = graos.lock().expect("Não foi possivel dar lock em graos");
+
+    if let Some(mao) = &*objeto_guard {
+    } else if let Some(grao) = procurar_grao_local(&posicao_formiga_guard, &graos_guard) {
+    }
+}
+
+fn procurar_grao_local(local: &Ponto, graos: &Vec<Grao>) -> Option<Grao> {
+    for g in graos.iter() {
+        if g.posicao == *local {
+            return Some(g.clone());
+        }
+    }
+
+    return None;
+}
+
+fn procurar_graos_redor(local: &Ponto, graos: &Vec<Grao>, mao: &Option<Grao>) -> Vec<Grao> {
+    let mut resultado: Vec<Grao> = vec![];
+
+    if let Some(g) = mao {
+        resultado.push(g.clone());
+    }
+
+    for g in graos {
+        let dist_x: i32 = (local.x - g.posicao.x).abs();
+        let dist_y: i32 = (local.y - g.posicao.y).abs();
+
+        if dist_x <= TAMANHO_VIZINHANCA && dist_y <= TAMANHO_VIZINHANCA {
+            resultado.push(g.clone());
+        }
+    }
+
+    return resultado;
 }
