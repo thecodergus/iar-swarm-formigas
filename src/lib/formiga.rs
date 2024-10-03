@@ -182,14 +182,38 @@ fn acao_segurar_objeto(
     objeto: Arc<Mutex<Option<Grao>>>,
     graos: Arc<Mutex<Vec<Grao>>>,
 ) {
+    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    let numero_aleatorio: f64 = rng.gen_range(0.0..=1.0);
+
+    // Locks de Mutex
     let posicao_formiga_guard = posicao_formiga
         .lock()
         .expect("Não foi possivel dar lock em formiga");
-    let objeto_guard = objeto.lock().expect("Não foi possivel dar lock em objeto");
-    let graos_guard = graos.lock().expect("Não foi possivel dar lock em graos");
+    let mut objeto_guard = objeto.lock().expect("Não foi possivel dar lock em objeto");
+    let mut graos_guard = graos.lock().expect("Não foi possivel dar lock em graos");
 
-    if let Some(mao) = &*objeto_guard {
+    // Procurar pelos grãos ao redor
+    let graos_perto = procurar_graos_redor(&*posicao_formiga_guard, &*graos_guard);
+
+    // Operações
+    if let Some(ref mut mao) = &mut *objeto_guard {
+        // Tem algo na mão que pode largar
+        if procurar_grao_local(&posicao_formiga_guard, &graos_guard).is_none() {
+            if numero_aleatorio <= pd(&mao, &graos_perto) {
+                mao.posicao = *posicao_formiga_guard;
+                graos_guard.push(mao.clone());
+                *objeto_guard = None;
+            }
+        }
     } else if let Some(grao) = procurar_grao_local(&posicao_formiga_guard, &graos_guard) {
+        // Não tem nada na mão mas tem algo na localização que pode pegar
+
+        if numero_aleatorio <= pp(&grao, &graos_perto) {
+            objeto_guard.replace(grao.clone());
+
+            // Removendo a lista de grãos
+            graos_guard.retain(|g| g.id != grao.id);
+        }
     }
 }
 
@@ -203,12 +227,8 @@ fn procurar_grao_local(local: &Ponto, graos: &Vec<Grao>) -> Option<Grao> {
     return None;
 }
 
-fn procurar_graos_redor(local: &Ponto, graos: &Vec<Grao>, mao: &Option<Grao>) -> Vec<Grao> {
+fn procurar_graos_redor(local: &Ponto, graos: &Vec<Grao>) -> Vec<Grao> {
     let mut resultado: Vec<Grao> = vec![];
-
-    if let Some(g) = mao {
-        resultado.push(g.clone());
-    }
 
     for g in graos {
         let dist_x: i32 = (local.x - g.posicao.x).abs();
@@ -220,4 +240,44 @@ fn procurar_graos_redor(local: &Ponto, graos: &Vec<Grao>, mao: &Option<Grao>) ->
     }
 
     return resultado;
+}
+
+fn distancia_entre_par_de_dados(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
+    a.iter()
+        .zip(b)
+        .map(|(i, j)| (*i - *j).powi(2))
+        .sum::<f64>()
+        .sqrt()
+}
+
+fn similaridade(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    let quantidade_dados: usize = graos_perto.len();
+
+    if quantidade_dados > 0 {
+        return graos_perto
+            .iter()
+            .map(|g| (1.0 - distancia_entre_par_de_dados(&grao.dados, &g.dados)) / ALPHA)
+            .sum::<f64>()
+            / 2.0
+            * TAMANHO_VIZINHANCA as f64
+            + 1.0;
+    }
+
+    return 0.0;
+}
+
+fn pp(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    (K1 / (K1 + similaridade(grao, graos_perto))).powi(2)
+}
+
+fn pd(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
+    let resultado: f64 = similaridade(grao, graos_perto);
+
+    if resultado < K2 {
+        return 2.0 * resultado;
+    } else if resultado >= K2 {
+        return 1.0;
+    }
+
+    return 0.0;
 }
