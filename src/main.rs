@@ -14,7 +14,7 @@ fn main() {
     let mut cenario: Cenario = Cenario::new(
         tamanho,
         gerar_formigas(quantidade_formigas, tamanho_mapa),
-        ler_graos_de_arquivo("Square1-DataSet-400itens.txt", tamanho_mapa).unwrap(),
+        ler_graos_de_arquivo("R15.txt", tamanho_mapa).unwrap(),
     );
     cenario.start(NUM_INTERACOES)
 }
