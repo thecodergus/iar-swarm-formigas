@@ -15,9 +15,9 @@ pub struct Formiga {
 
 // Parametros
 const TAMANHO_VIZINHANCA: i32 = 1; // Definindo o tamanho da vizinhança (a distância máxima em cada direção)
-const ALPHA: f64 = 0.5;
-const K1: f64 = 0.05;
-const K2: f64 = 0.0125;
+const ALPHA: f64 = 12.0;
+const K1: f64 = 0.5;
+const K2: f64 = 0.5;
 
 impl Formiga {
     pub fn new(ponto_surgimento: Ponto) -> Formiga {
