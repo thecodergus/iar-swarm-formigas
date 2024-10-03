@@ -239,36 +239,23 @@ fn acao_segurar_objeto(
             // Atualiza a posição do grão e o adiciona de volta à lista de grãos
             grao_carregado.posicao = posicao_guard.clone();
             adicionar_grao(grao_carregado, &mut graos_guard);
-            *objeto_guard = None; // A formiga larga o grão
+            *objeto_guard = None;
         }
     }
     // Se a formiga não estiver carregando nada
     else if let Some(grao) = grao_na_posicao {
-        // Verifica se a formiga pode pegar o grão na posição atual
         if probabilidade <= pode_pegar(&grao, &graos_entorno) {
-            *objeto_guard = Some(grao.clone()); // A formiga pega o grão
-            remover_grao(&grao, &mut graos_guard); // Remove o grão da lista de grãos
+            objeto_guard.replace(grao.clone());
+            remover_grao(&grao, &mut graos_guard);
         }
     }
 }
-
-// Função que calcula a distância euclidiana adaptada entre dois vetores
-// No contexto de "Ant-based clustering", essa função é utilizada para medir a similaridade
-// entre dois objetos (ou grãos). Em vez de comparar diretamente as coordenadas espaciais,
-// a distância euclidiana adaptada compara os dados representados pelos vetores "a" e "b".
-// Isso é importante, pois formigas decidem suas ações (pegar ou largar um grão) com base na
-// similaridade entre os objetos ao seu redor, onde a distância menor indica maior similaridade.
 
 fn distancia_euclidiana_adaptada(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
     // Primeiro, assegura que os dois vetores têm o mesmo tamanho
     // Essa verificação evita erros ao calcular a distância entre vetores de tamanhos diferentes.
     assert_eq!(a.len(), b.len(), "Os vetores devem ter o mesmo tamanho.");
 
-    // A seguir, itera sobre os dois vetores simultaneamente usando zip, subtraindo os elementos
-    // correspondentes de 'a' e 'b', elevando essa diferença ao quadrado (como na fórmula
-    // da distância euclidiana). Depois, soma todas as diferenças ao quadrado e finalmente tira
-    // a raiz quadrada, que dá a distância euclidiana entre os dois vetores.
-    // Isso mede a "proximidade" dos dois vetores nos seus espaços multidimensionais.
     return a
         .iter() // Itera sobre os elementos do vetor 'a'
         .zip(b.iter()) // Combina com os elementos correspondentes do vetor 'b'
@@ -277,48 +264,25 @@ fn distancia_euclidiana_adaptada(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
         .sqrt(); // Calcula a raiz quadrada da soma, obtendo a distância euclidiana
 }
 
-// Função que calcula a similaridade entre um grão e os grãos próximos
-// Esta função é inspirada no comportamento de formigas organizando itens (como larvas ou detritos)
-// em suas colônias. A similaridade é um fator importante para que a formiga decida onde largar ou pegar
-// um item, com base nos itens semelhantes ao redor.
-// No contexto do "ant-based clustering", formigas agrupam itens semelhantes em áreas específicas.
 fn similaridade(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
     // Se não há grãos por perto, a similaridade é zero
     if graos_perto.len() == 0 {
         return 0.0;
     } else {
-        // Calcula a similaridade entre o grão atual e os grãos ao redor
-        // A fórmula usada aqui é baseada na média das similaridades individuais
-        // A função `distancia_euclidiana_adaptada` calcula a distância entre os dados dos grãos
-        // A constante ALPHA é usada para ajustar a escala da similaridade, com base na distância
         return (1.0 / (graos_perto.len() as f64).powi(2))
             * graos_perto
                 .iter()
                 .map(|grao_aux| {
-                    // A similaridade é baseada na distância euclidiana adaptada entre os dados
-                    // quanto menor a distância, maior a similaridade
                     1.0 - (distancia_euclidiana_adaptada(&grao.dados, &grao_aux.dados) / ALPHA)
                 })
                 .sum::<f64>();
     }
 }
 
-// Função que calcula a probabilidade de pegar um grão
-// Formigas decidem pegar itens quando estes estão isolados ou em regiões onde a similaridade
-// com os itens ao redor é baixa. Isso simula o comportamento natural das formigas quando encontram
-// itens fora do lugar e decidem movê-los.
 fn pode_pegar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
-    // A probabilidade de pegar um item é inversamente proporcional à similaridade com os itens ao redor
-    // Se o grão for muito diferente dos seus vizinhos, a similaridade será baixa e a probabilidade de
-    // pegá-lo será maior. A constante K1 ajusta a sensibilidade desta probabilidade.
     (K1 / (K1 + similaridade(grao, graos_perto))).powi(2)
 }
 
-// Função que calcula a probabilidade de largar um grão
-// Depois que a formiga carrega um item, ela precisa decidir onde largá-lo. Formigas largam itens
-// em regiões onde outros itens semelhantes já estão presentes. Isso favorece a formação de grupos
-// de itens semelhantes, comportamento comum em colônias de formigas.
-// Similaridade alta significa uma probabilidade maior de largar o item naquele local.
 fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
     // Primeiro, calcula-se a similaridade com os grãos próximos
     let similidarida_result: f64 = similaridade(grao, graos_perto);
@@ -328,28 +292,15 @@ fn pode_largar(grao: &Grao, graos_perto: &Vec<Grao>) -> f64 {
     (similidarida_result / (K2 + similidarida_result)).powi(2)
 }
 
-// Função que remove um grão da lista de grãos
-// Quando a formiga pega um grão, esse grão é removido do ambiente. O vetor de grãos deve ser atualizado
-// removendo o grão que foi retirado pela formiga. Esta função garante que a remoção ocorra de forma
-// segura usando mecanismos de concorrência como Arc<Mutex> para garantir que outros processos não
-// acessem os dados simultaneamente.
 fn remover_grao(g: &Grao, graos: &mut Vec<Grao>) {
-    // Filtra o vetor de grãos para manter apenas os grãos cujo ID seja diferente do grão removido
     graos.retain(|g_| g.id != g_.id);
 }
 
-// Função que adiciona um grão à lista de grãos
-// Quando a formiga decide largar um grão, o grão deve ser inserido novamente no ambiente.
-// Essa função adiciona o grão ao vetor de grãos de forma segura, garantindo que a inserção seja
-// feita de maneira concorrente, evitando problemas de race conditions usando Arc<Mutex>.
 fn adicionar_grao(g: &Grao, graos: &mut Vec<Grao>) {
     graos.push(g.clone());
 }
 
 fn ha_grao_na_posicao_formiga(posicao_formiga: &Ponto, graos_guard: &Vec<Grao>) -> bool {
-    // Trava o mutex para acessar a posição da formiga
-    // Trava o mutex para acessar a lista de grãos
-    // Itera sobre os grãos e verifica se algum está na mesma posição que a formiga
     for grao in graos_guard.iter() {
         if grao.posicao == *posicao_formiga {
             return true; // Retorna true se encontrar um grão na mesma posição
